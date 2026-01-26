@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <title>Order Details - Ecommerce</title>
+    <style>
+        body { background-color: #f8f9fa; }
+        .order-container { max-width: 800px; margin: 2rem auto; background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .confirmation { background: #d4edda; padding: 1rem; border-radius: 5px; margin-bottom: 1rem; }
+        .escrow-details { background: #f8f9fa; padding: 1rem; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="order-container">
+            <h1 class="mb-4">Order Confirmation</h1>
+
+            <% if (escrowData && !escrowData.error) { %>
+                <div class="confirmation">
+                    <h4>Payment Successfully Secured!</h4>
+                    <p>Your funds have been locked in the escrow smart contract. The seller will only receive payment after you confirm delivery.</p>
+                </div>
+
+                <div class="escrow-details">
+                    <h5>Escrow Details</h5>
+                    <p><strong>Order ID:</strong> <%= escrowData.orderId %></p>
+                    <p><strong>Amount Locked:</strong> <%= escrowData.amountWei %> Wei</p>
+                    <p><strong>Smart Contract Address:</strong> <%= contractAddress %></p>
+                    <p><strong>Status:</strong> <%= escrowData.status == 0 ? 'None' : escrowData.status == 1 ? 'Funds Locked' : escrowData.status == 2 ? 'Released' : 'Refunded' %></p>
+                    <p><strong>Reward Status:</strong> Pending (will be awarded upon delivery confirmation)</p>
+                </div>
+
+                <a href="/trackDelivery?orderId=<%= encodeURIComponent(escrowData.orderId) %>" class="btn btn-primary">Track Delivery</a>
+            <% } else { %>
+                <p>Error loading order details.</p>
+                <% if (escrowData && escrowData.error) { %>
+                    <p><%= escrowData.error %></p>
+                <% } %>
+            <% } %>
+        </div>
+    </div>
+</body>
+</html>

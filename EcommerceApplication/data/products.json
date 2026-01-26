@@ -1,0 +1,52 @@
+[
+  {
+    "productId": "PRD002",
+    "name": "Amazon Kindle",
+    "description": "Paperwhite (16 GB) – Our fastest Kindle ever, with new 7\" glare-free display, and weeks of battery life – Black (International Version",
+    "price": 274.41,
+    "stock": 100,
+    "releaseDate": "2020-12-12",
+    "category": "Accessories",
+    "image": "Screenshot 2026-01-16 233907.png"
+  },
+  {
+    "productId": "PRD003",
+    "name": "Smart Phone Case ",
+    "description": "Exclusive Essential Case for iPhone 14 Pro Max - Clear Purple",
+    "price": 72,
+    "stock": 100,
+    "releaseDate": "2020-12-12",
+    "category": "Accessories",
+    "image": "Screenshot 2026-01-16 233922.png"
+  },
+  {
+    "productId": "PRD004",
+    "name": "Controller",
+    "description": "Sony PlayStation 5 DualSense Wireless Controller - Midnight Black",
+    "price": 93.99,
+    "stock": 100,
+    "releaseDate": "2020-12-12",
+    "category": "Accessories",
+    "image": "Screenshot 2026-01-16 233943.png"
+  },
+  {
+    "productId": "PRD005",
+    "name": "Mouse",
+    "description": "Logitech 910-005790 G203 Lightsync RGB Wired Gaming Mouse, Black",
+    "price": 23.68,
+    "stock": 100,
+    "releaseDate": "2020-12-12",
+    "category": "Accessories",
+    "image": "Screenshot 2026-01-16 233936.png"
+  },
+  {
+    "productId": "PRD006",
+    "name": "Headset",
+    "description": "Acer Predator Galea 311 True Harmony Sound Gaming Headset: 50mm Drivers ",
+    "price": 93.99,
+    "stock": 100,
+    "releaseDate": "2020-12-12",
+    "category": "Accessories",
+    "image": "Screenshot 2026-01-16 233930.png"
+  }
+]

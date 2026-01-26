@@ -1,0 +1,303 @@
+const express = require('express');
+const { Web3 } = require('web3');
+const fs = require("fs");
+const path = require("path");
+const EcommerceContract = require('./build/EcommerceContract.json');
+const multer = require('multer');
+const session = require('express-session');
+
+const publicDir = path.join(__dirname, "public");
+const imagesDir = path.join(publicDir, "images");
+fs.mkdirSync(imagesDir, { recursive: true });
+
+// ===== Multer =====
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, imagesDir),
+  filename: (req, file, cb) => {
+    const unique = Date.now() + "-" + Math.round(Math.random() * 1E9);
+    cb(null, unique + "-" + file.originalname);
+  }
+});
+const upload = multer({ storage });
+
+const app = express();
+app.set('view engine', 'ejs');
+app.use(express.static(publicDir));
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
+app.use(session({ secret: 'ecommerce-secret', resave: false, saveUninitialized: true }));
+
+let GanacheWeb3;
+let account = '';
+let sellerAccount = '';
+let listOfProductsSC = [];
+let contractInfo;
+let escrowInfo;
+
+const productsDataPath = path.join(__dirname, "data", "products.json");
+const ordersDataPath = path.join(__dirname, "data", "orders.json");
+
+// ===== Helpers for Orders JSON =====
+async function ensureOrdersFile() {
+  try { await fs.promises.access(ordersDataPath); }
+  catch {
+    await fs.promises.mkdir(path.dirname(ordersDataPath), { recursive: true });
+    await fs.promises.writeFile(ordersDataPath, JSON.stringify([], null, 2));
+  }
+}
+async function readOrders() {
+  await ensureOrdersFile();
+  return JSON.parse(await fs.promises.readFile(ordersDataPath, "utf8"));
+}
+async function writeOrders(orders) {
+  await fs.promises.mkdir(path.dirname(ordersDataPath), { recursive: true });
+  await fs.promises.writeFile(ordersDataPath, JSON.stringify(orders, null, 2));
+}
+
+// ===== Load Web3 + Contracts =====
+let PaymentEscrow;
+try {
+  PaymentEscrow = require('./build/PaymentEscrow.json');
+} catch {
+  PaymentEscrow = require('../build/contracts/PaymentEscrow.json');
+}
+
+async function loadWeb3() {
+  const host = process.env.WEB3_HOST || "127.0.0.1";
+  const port = process.env.WEB3_PORT || "7545";
+  const providerUrl = process.env.WEB3_PROVIDER || `http://${host}:${port}`;
+  GanacheWeb3 = new Web3(providerUrl);
+  try {
+    await GanacheWeb3.eth.net.isListening();
+  } catch (err) {
+    throw new Error(
+      `Web3 provider not reachable at ${providerUrl}. Start Ganache or set WEB3_PROVIDER. Original error: ${err.message}`
+    );
+  }
+}
+
+async function loadBlockchainData() {
+  if (!GanacheWeb3) {
+    throw new Error("Web3 not initialized. Call loadWeb3() first.");
+  }
+  const web3 = GanacheWeb3;
+  const accounts = await web3.eth.getAccounts();
+  account = accounts[0];
+  sellerAccount = accounts[1];
+
+  const networkId = await web3.eth.net.getId();
+
+  const ecommerceNetwork = EcommerceContract.networks[networkId];
+  if (!ecommerceNetwork) {
+    throw new Error(`EcommerceContract not deployed on network ${networkId}. Run truffle migrate on the correct network.`);
+  }
+  contractInfo = new web3.eth.Contract(EcommerceContract.abi, ecommerceNetwork.address);
+
+  const escrowNetwork = PaymentEscrow.networks[networkId];
+  if (!escrowNetwork) {
+    throw new Error(`PaymentEscrow not deployed on network ${networkId}. Run truffle migrate on the correct network.`);
+  }
+  escrowInfo = new web3.eth.Contract(PaymentEscrow.abi, escrowNetwork.address);
+}
+
+/* ================= ROUTES ================= */
+
+// Home
+const jsonProducts = require("./data/products.json");
+
+app.get('/', async (req, res) => {
+  await loadBlockchainData();
+
+  const cnt = jsonProducts.length; 
+
+  res.render('index', {
+    acct: account,
+    products: jsonProducts,
+    status: false,
+    cnt: cnt
+  });
+});
+
+// Product detail
+app.get('/product/:id', async (req, res) => {
+  await loadBlockchainData();
+  const product = jsonProducts.find(p => p.productId === req.params.id);
+  if (!product) return res.status(404).send("Not found");
+
+  res.render('productDetail', {
+    acct: account,
+    sellerAcct: sellerAccount,
+    productData: product,
+    contractAddress: escrowInfo.options.address
+  });
+});
+
+// Add to cart
+app.post('/addToCart/:productId', (req, res) => {
+  const id = req.params.productId;
+  if (!req.session.cart) req.session.cart = [];
+  const p = jsonProducts.find(x => x.productId === id);
+  if (p) {
+    const existing = req.session.cart.find(i => i.productId === id);
+    existing ? existing.quantity++ : req.session.cart.push({ ...p, quantity: 1 });
+  }
+  res.redirect('/cart');
+});
+
+// Cart
+app.get('/cart', async (req, res) => {
+  await loadBlockchainData();
+
+  const cartItems = req.session.cart || [];
+  const subtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  const shippingFee = 10;
+  const total = subtotal + shippingFee;
+
+  // Loyalty logic 
+  const expectedTokens = Math.floor(total / 10); // e.g. 1 token per $10 spent
+
+  res.render('cart', {
+    acct: account,
+    cartItems,
+    subtotal,
+    shippingFee,
+    total,
+    expectedTokens   
+  });
+});
+
+
+// Checkout 
+app.get('/checkout', async (req, res) => {
+  await loadBlockchainData();
+
+  const cartItems = req.session.cart || [];
+  if (!cartItems.length) return res.redirect('/cart');
+
+  const subtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  const shippingFee = 10;
+  const total = subtotal + shippingFee;
+  const orderId = `ORD-CART-${Date.now()}`;
+
+  res.render('checkout', {
+    acct: account,
+    cartItems,
+    subtotal,
+    shippingFee,
+    total,
+    orderId,
+    contractAddress: escrowInfo.options.address,
+    sellerAcct: sellerAccount
+  });
+});
+
+// ✅ Off-chain Order API (used by escrow-frontend.js)
+app.post('/orders', async (req, res) => {
+  try {
+    const { orderId, items, buyerWallet, deliveryAddress, totalEth } = req.body;
+    const finalId = orderId || `ORD-${Date.now()}`;
+
+    const record = {
+      orderId: finalId,
+      items,
+      buyerWallet,
+      deliveryAddress,
+      totalEth,
+      status: "PAID_ESCROW",
+      createdAt: new Date().toISOString()
+    };
+
+    const orders = await readOrders();
+    orders.push(record);
+    await writeOrders(orders);
+
+    res.json({ orderId: finalId });
+  } catch (err) {
+    console.error("Create order failed:", err);
+    res.status(500).json({ error: "Failed to create order" });
+  }
+});
+
+// Order Details
+app.get('/orderDetails', async (req, res) => {
+  const orderId = req.query.orderId;
+  if (!orderId) return res.redirect('/');
+
+  await loadBlockchainData();
+
+  let escrowData = null;
+  try {
+    const o = await escrowInfo.methods.getOrder(orderId).call();
+    escrowData = {
+      orderId,
+      buyer: o.buyer || o[0],
+      seller: o.seller || o[1],
+      amountWei: o.amountWei || o[2],
+      status: o.status || o[3],
+      createdAt: o.createdAt || o[4]
+    };
+  } catch (e) {
+    escrowData = { orderId, error: "Order not found on chain" };
+  }
+
+  res.render('orderDetails', {
+    acct: account,
+    escrowData,
+    contractAddress: escrowInfo.options.address
+  });
+});
+
+app.get("/trackDelivery", async (req, res) => {
+  const orderId = req.query.orderId;
+  if (!orderId) return res.redirect("/");
+
+  await loadBlockchainData();
+
+  // Pull escrow state (FundsLocked / Released / Refunded)
+  let escrowData = null;
+  try {
+    const o = await escrowInfo.methods.getOrder(orderId).call();
+    escrowData = {
+      orderId,
+      buyer: o.buyer || o[0],
+      seller: o.seller || o[1],
+      amountWei: o.amountWei || o[2],
+      status: Number(o.status ?? o[3]),
+      createdAt: o.createdAt || o[4],
+    };
+  } catch (e) {
+    escrowData = { orderId, error: "Order not found on chain" };
+  }
+
+  // Placeholder delivery timeline (until teammate implements real tracking)
+  const deliveryStatus = {
+    trackingId: `TRK-${orderId.slice(-6)}`,
+    carrier: "DemoExpress",
+    lastUpdated: new Date().toISOString(),
+    timeline: [
+      { status: "Order placed", date: new Date(Date.now() - 1000 * 60 * 60).toISOString() },
+      { status: "Packed", date: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
+      { status: "Out for delivery", date: new Date().toISOString() },
+    ],
+  };
+
+  res.render("deliveryTracking", { acct: account, escrowData, deliveryStatus });
+});
+
+// Basic error handler for async route errors.
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).send(err.message || "Unexpected server error");
+});
+
+/* ===== Server Start ===== */
+(async () => {
+  try {
+    await loadWeb3();
+    await loadBlockchainData();
+  } catch (err) {
+    console.error(err.message || err);
+  }
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+})();

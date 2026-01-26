@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        .navbar-custom {
+            background-color: #9e9e9e;
+        }
+
+        .navbar-custom .nav-link,
+        .navbar-custom .navbar-brand,
+        .navbar-custom .navbar-text {
+            color: #1f1f1f;
+            font-weight: 600;
+        }
+
+        .navbar-custom .nav-link:hover,
+        .navbar-custom .navbar-brand:hover {
+            color: #111111;
+        }
+
+        .logo-img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+        }
+
+        .nav-search {
+            min-width: 200px;
+            border-radius: 999px;
+        }
+
+        .nav-btn {
+            border-radius: 999px;
+        }
+
+        .account-pill {
+            background: #424242;
+            color: #ffffff;
+            padding: 0.4rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+        }
+       
+        .form-container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-title {
+            color: var(--primary-color);
+            margin-bottom: 2rem;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+
+        .form-control {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 0.75rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(76, 175, 80, 0.25);
+        }
+
+        .file-upload {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-upload-label {
+            display: block;
+            padding: 1rem;
+            background: var(--background-color);
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-label:hover {
+            border-color: var(--primary-color);
+            background: #f0f9f0;
+        }
+
+        .file-upload input[type="file"] {
+            opacity: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .submit-btn {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .submit-btn:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .form-container {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+        }
+    </style>
+    <title>Add Quality Check - Ecomme</title>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-custom navbar-light">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/">Ecomme</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="collapsibleNavbar">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Products</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/addProduct">Add Product</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/wallet">Wallet</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/about">About Us</a>
+                    </li>
+                </ul>
+                <form class="d-flex me-lg-3 my-2 my-lg-0" role="search">
+                    <input class="form-control me-2 nav-search" type="search" placeholder="Search products" aria-label="Search">
+                    <button class="btn btn-outline-dark nav-btn" type="submit">Search</button>
+                </form>
+                <div class="d-flex align-items-center gap-2">
+                    <a class="btn btn-dark nav-btn" href="/cart">Add to Cart</a>
+                    <a class="btn btn-outline-dark nav-btn" href="/login">Login</a>
+                    <span class="navbar-text account-pill">Account: <%= acct %></span>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <div class="form-container">
+      <br>
+      <div class="form-title text-center"><h2>Add Quality Check Info</h2></div>
+      <div class="form-title text-center"><h2>Of Product id <%= productId %></h2></div>
+    
+      <br>
+      <div class="text-center">
+          <form action="/addQualityCheck" method="POST" >
+            <div class="form-group">
+                <label for="inspectionName" class="form-label">Inspection Name</label>
+                <input type="text" class="form-control" id="inspectionName" name="inspectionName" required
+                       placeholder="Enter inspection name">
+            </div>
+
+            <div class="form-group">
+                <label for="inspectionDate" class="form-label">Inspection Date</label>
+                <input type="date" class="form-control" id="inspectionDate" name="inspectionDate" required>
+            </div>
+
+            <div class="form-group">
+                <label for="inspectorName" class="form-label">Inspector Name</label>
+                <input type="text" class="form-control" id="inspectorName" name="inspectorName" required
+                       placeholder="Enter inspector name">
+            </div>
+
+            <div class="form-group">
+                <label for="facilityName" class="form-label">Facility Name</label>
+                <input type="text" class="form-control" id="facilityName" name="facilityName" required
+                       placeholder="Enter facility name">
+            </div>
+
+            <div class="form-group">
+                <label for="contact" class="form-label">Contact Number</label>
+                <input type="tel" class="form-control" id="contact" name="contact" required
+                       pattern="[0-9]{7}" placeholder="Enter 7-digit contact number">
+            </div>
+
+            <div class="form-group">
+                <label for="emailId" class="form-label">Email id</label>
+                <input type="email" class="form-control" id="emailId" name="emailId" required>
+            </div>
+
+           
+
+            <input type="hidden"  id="productId" name="productId" value = "<%= productId %>" />
+       
+            <button type="submit">Add Quality Check</button>
+          </form>
+      </div>
+  </div>
+</body>
+</html>

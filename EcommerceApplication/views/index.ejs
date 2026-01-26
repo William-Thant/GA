@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+    
+        .navbar-custom {
+            background-color: #9e9e9e;
+        }
+
+        .navbar-custom .nav-link,
+        .navbar-custom .navbar-brand,
+        .navbar-custom .navbar-text {
+            color: #1f1f1f;
+            font-weight: 600;
+        }
+
+        .navbar-custom .nav-link:hover,
+        .navbar-custom .navbar-brand:hover {
+            color: #111111;
+        }
+
+        .logo-img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+        }
+
+        .nav-search {
+            min-width: 200px;
+            border-radius: 999px;
+        }
+
+        .nav-btn {
+            border-radius: 999px;
+        }
+
+        .account-pill {
+            background: #424242;
+            color: #ffffff;
+            padding: 0.4rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+        }
+            
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 2rem;
+            padding: 2rem 0;
+        }
+
+        .product-box {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .product-box:hover {
+            transform: translateY(-5px);
+        }
+
+        .product-box img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .product-box:hover img {
+            transform: scale(1.05);
+        }
+
+        .product-name {
+            padding: 1rem;
+            background: white;
+        }
+
+        .product-name h4 {
+            margin: 0;
+            color: var(--text-color);
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .product-actions {
+            display: flex;
+            justify-content: flex-end;
+            padding: 0 1rem 1rem;
+        }
+
+        .delete-btn {
+            border-radius: 999px;
+        }
+
+        .page-header {
+            text-align: center;
+            padding: 2rem 0;
+            color: var(--primary-color);
+        }
+
+        .stats-container {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .account-badge {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 1rem;
+            }
+        }
+
+        .loading-indicator {
+            padding: 20px;
+            text-align: center;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+    </style>
+    <title>Ecomme</title>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-custom navbar-light">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/">Ecomme</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="collapsibleNavbar">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Products</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/addProduct">Add Product</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/wallet">Wallet</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/about">About Us</a>
+                    </li>
+                </ul>
+                <form class="d-flex me-lg-3 my-2 my-lg-0" role="search">
+                    <input class="form-control me-2 nav-search" type="search" placeholder="Search products" aria-label="Search">
+                    <button class="btn btn-outline-dark nav-btn" type="submit">Search</button>
+                </form>
+                <div class="d-flex align-items-center gap-2">
+                    <a class="btn btn-dark nav-btn" href="/cart">Add to Cart</a>
+                    <a class="btn btn-outline-dark nav-btn" href="/login">Login</a>
+                    <span class="navbar-text account-pill">Account: <%= acct %></span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <% if (!status) { %>
+        
+        <div class="page-header">
+            <h1>Welcome to Ecomme</h1>
+        </div>
+
+        <div class="stats-container">
+            <div class="row text-center">
+                <div class="col-md-6">
+                    <h4>Available Products</h4>
+                    <h2><%= cnt %></h2>
+                </div>
+                <div class="col-md-6">
+                    <h4>Current Account</h4>
+                    <h2><%= acct %></h2>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="text-center mb-4">Product Gallery</h2>
+        
+        <div class="grid-container" id="productGallery">
+            <% for(let i=0; i < products.length; i++) { %>
+                <% const p = products[i]; %>
+                <% const isJson = !!p.productId; %>
+                <% const catalog = p.catalog ? p.catalog : p; %>
+
+                <% const displayName = catalog.name ? catalog.name : (p.productInfo?.name || "Unnamed"); %>
+                <% const imgFile = catalog.image ? catalog.image : null; %>
+                <% const cardImage = imgFile ? ("/images/" + imgFile) : "/images/ecomme.png"; %>
+                <% const linkId = isJson ? p.productId : p.id; %>
+
+                <div class="product-box">   
+                        <a href="/product/<%= p.productId %>" class="text-decoration-none">
+                        <img src="<%= cardImage %>" alt="<%= displayName %>">
+                        <div class="product-name">
+                            <h4><%= displayName %></h4>
+                            <p class="mb-1 text-muted small"><%= catalog && catalog.description ? catalog.description : 'Product details coming soon.' %></p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-semibold">$<%= catalog && catalog.price !== undefined ? catalog.price : '0.00' %></span>
+                                <span class="text-muted small">Stock: <%= catalog && catalog.stock !== undefined ? catalog.stock : 0 %></span>
+                            </div>
+                        </div>
+                    </a>
+                    <% if (catalog) { %>
+                        <div class="product-actions">
+                            <form action="/addToCart/<%= p.productId %>" method="POST" style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-success">Add to Cart</button>
+                            </form>
+                            <form action="/deleteProduct/<%= linkId %>" method="POST" style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-outline-danger delete-btn">Delete</button>
+                            </form>
+                        </div>
+                    <% } %>
+                </div>
+            <% } %>
+        </div>
+        <% } else { %>
+            <div class="loading-indicator">
+                Loading blockchain data...
+            </div>
+            <h1>Loading Data............!</h1>
+            <!-- <h4> status: <%= status %></h4> -->
+           
+          <% } %>
+    </div>
+
+    <script>
+        window.onload = function() {
+            // Get the current refresh count from sessionStorage
+            let refreshCount = sessionStorage.getItem("refreshCount");
+            console.log(refreshCount)
+            // If this is the first load, initialize the counter to 0
+            if (refreshCount === null) {
+                refreshCount = 0;
+            } else {
+                // Convert to a number and increment
+                refreshCount = parseInt(refreshCount) + 1;
+            }
+
+            // Save the updated counter back to sessionStorage
+            sessionStorage.setItem("refreshCount", refreshCount);
+
+            // Reload the page if the counter is less than 3
+            if (refreshCount < 3) {
+                console.log(refreshCount);
+                //window.location.reload();
+                setTimeout(function() {
+                    window.location.reload();
+                }, 6000); // 2000 milliseconds = 2 seconds
+            }
+        };
+    </script>
+</body>
+</html>
