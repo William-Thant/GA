@@ -135,9 +135,10 @@
             margin: 20px 0;
         }
     </style>
+    <link rel="stylesheet" href="/style.css">
     <title>Ecomme</title>
 </head>
-<body>
+<body class="page-shell">
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-custom navbar-light">
         <div class="container-fluid">
@@ -179,24 +180,42 @@
     <div class="container">
         <% if (!status) { %>
         
-        <div class="page-header">
-            <h1>Welcome to Ecomme</h1>
-        </div>
-
-        <div class="stats-container">
-            <div class="row text-center">
-                <div class="col-md-6">
-                    <h4>Available Products</h4>
-                    <h2><%= cnt %></h2>
+        <div class="hero mb-4">
+            <div class="d-flex flex-wrap gap-4 align-items-center">
+                <div class="flex-grow-1">
+                    <div class="pill mb-3">Escrow-secured marketplace</div>
+                    <h1 class="mb-2">Welcome to Ecomme</h1>
+                    <p class="lead mb-3">Shop and sell with confidence: every purchase is protected by on-chain escrow and clear delivery tracking.</p>
+                    <div class="hero-cta">
+                        <a class="btn btn-dark" href="#productGallery">Browse products</a>
+                        <a class="btn btn-outline-dark" href="/wallet">Wallet & rewards</a>
+                    </div>
+                    <div class="hero-badges">
+                        <span class="hero-badge">Instant checkout</span>
+                        <span class="hero-badge">Transparent tracking</span>
+                        <span class="hero-badge">Secure payments</span>
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <h4>Current Account</h4>
-                    <h2><%= acct %></h2>
+                <div class="glass-card text-center">
+                    <div class="section-heading mb-2"><span>Store Snapshot</span></div>
+                    <div class="d-flex flex-column gap-2">
+                        <div>
+                            <div class="text-muted">Available Products</div>
+                            <div class="display-6 fw-bold"><%= cnt %></div>
+                        </div>
+                        <div class="border-top pt-2">
+                            <div class="text-muted">Current Account</div>
+                            <div class="fw-semibold"><%= acct %></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <h2 class="text-center mb-4">Product Gallery</h2>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="section-heading mb-0"><span>Product Gallery</span></div>
+            <a href="/addProduct" class="btn btn-outline-dark">Add product</a>
+        </div>
         
         <div class="grid-container" id="productGallery">
             <% for(let i=0; i < products.length; i++) { %>
@@ -214,10 +233,10 @@
                         <img src="<%= cardImage %>" alt="<%= displayName %>">
                         <div class="product-name">
                             <h4><%= displayName %></h4>
-                            <p class="mb-1 text-muted small"><%= catalog && catalog.description ? catalog.description : 'Product details coming soon.' %></p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="fw-semibold">$<%= catalog && catalog.price !== undefined ? catalog.price : '0.00' %></span>
-                                <span class="text-muted small">Stock: <%= catalog && catalog.stock !== undefined ? catalog.stock : 0 %></span>
+                            <p class="mb-2 text-muted small"><%= catalog && catalog.description ? catalog.description : 'Product details coming soon.' %></p>
+                            <div class="product-meta">
+                                <span class="price-tag">$<%= catalog && catalog.price !== undefined ? catalog.price : '0.00' %></span>
+                                <span class="stock-chip">Stock: <%= catalog && catalog.stock !== undefined ? catalog.stock : 0 %></span>
                             </div>
                         </div>
                     </a>
