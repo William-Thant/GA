@@ -552,5 +552,60 @@
     "totalEth": "0.0410",
     "status": "PAID_ESCROW",
     "createdAt": "2026-01-26T06:55:58.851Z"
+  },
+  {
+    "orderId": "ORD-CART-1769444000638",
+    "items": [
+      {
+        "productId": "PRD003",
+        "name": "Smart Phone Case ",
+        "description": "Exclusive Essential Case for iPhone 14 Pro Max - Clear Purple",
+        "price": 72,
+        "stock": 100,
+        "releaseDate": "2020-12-12",
+        "category": "Accessories",
+        "image": "Screenshot 2026-01-16 233922.png",
+        "quantity": 1
+      }
+    ],
+    "buyerWallet": "0xa295395c6327ec0a1d2c366d994e75b170e4c441",
+    "deliveryAddress": "",
+    "totalEth": "0.0410",
+    "status": "PAID_ESCROW",
+    "createdAt": "2026-01-26T16:13:23.109Z"
+  },
+  {
+    "orderId": "ORD-CART-1769444186254",
+    "items": [
+      {
+        "productId": "PRD005",
+        "name": "Mouse",
+        "description": "Logitech 910-005790 G203 Lightsync RGB Wired Gaming Mouse, Black",
+        "price": 23.68,
+        "stock": 100,
+        "releaseDate": "2020-12-12",
+        "category": "Accessories",
+        "image": "Screenshot 2026-01-16 233936.png",
+        "quantity": 1
+      },
+      {
+        "productId": "PRD002",
+        "name": "Amazon Kindle",
+        "description": "Paperwhite (16 GB) – Our fastest Kindle ever, with new 7\" glare-free display, and weeks of battery life – Black (International Version",
+        "price": 274.41,
+        "stock": 100,
+        "releaseDate": "2020-12-12",
+        "category": "Accessories",
+        "image": "Screenshot 2026-01-16 233907.png",
+        "quantity": 1
+      }
+    ],
+    "buyerWallet": "0xa295395c6327ec0a1d2c366d994e75b170e4c441",
+    "deliveryAddress": "",
+    "totalEth": "0.1540",
+    "status": "RELEASED",
+    "createdAt": "2026-01-26T16:17:16.447Z",
+    "txHash": "0xc0a4f7a7ee917a0f98fbcfca876ce59e683b52b4d9b3a1753376642ecb58d026",
+    "releasedAt": "2026-01-26T16:21:02.982Z"
   }
 ]

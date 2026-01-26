@@ -284,6 +284,37 @@ app.get("/trackDelivery", async (req, res) => {
   res.render("deliveryTracking", { acct: account, escrowData, deliveryStatus });
 });
 
+// Confirm delivery -> release escrow funds on-chain
+app.post("/escrow/confirm", async (req, res, next) => {
+  try {
+    const { orderId, productId } = req.body;
+    if (!orderId) return res.status(400).send("Missing orderId");
+
+    await loadBlockchainData();
+    const receipt = await escrowInfo.methods.confirmDelivery(orderId).send({ from: account });
+
+    try {
+      const orders = await readOrders();
+      const idx = orders.findIndex(o => o.orderId === orderId);
+      if (idx >= 0) {
+        orders[idx].status = "RELEASED";
+        orders[idx].txHash = receipt.transactionHash;
+        orders[idx].releasedAt = new Date().toISOString();
+        await writeOrders(orders);
+      }
+    } catch (err) {
+      console.warn("Failed to update orders.json after escrow release:", err.message || err);
+    }
+
+    const fallback = productId
+      ? `/product/${encodeURIComponent(productId)}`
+      : `/orderDetails?orderId=${encodeURIComponent(orderId)}`;
+    res.redirect(req.get("referer") || fallback);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Basic error handler for async route errors.
 app.use((err, req, res, next) => {
   console.error(err);
