@@ -54,6 +54,23 @@ async function writeOrders(orders) {
   await fs.promises.writeFile(ordersDataPath, JSON.stringify(orders, null, 2));
 }
 
+// ===== Helpers for Products JSON =====
+async function ensureProductsFile() {
+  try { await fs.promises.access(productsDataPath); }
+  catch {
+    await fs.promises.mkdir(path.dirname(productsDataPath), { recursive: true });
+    await fs.promises.writeFile(productsDataPath, JSON.stringify([], null, 2));
+  }
+}
+async function readProducts() {
+  await ensureProductsFile();
+  return JSON.parse(await fs.promises.readFile(productsDataPath, "utf8"));
+}
+async function writeProducts(products) {
+  await fs.promises.mkdir(path.dirname(productsDataPath), { recursive: true });
+  await fs.promises.writeFile(productsDataPath, JSON.stringify(products, null, 2));
+}
+
 // ===== Load Web3 + Contracts =====
 let PaymentEscrow;
 try {
@@ -166,6 +183,94 @@ app.get('/cart', async (req, res) => {
   });
 });
 
+// Wallet & rewards
+app.get('/wallet', async (req, res) => {
+  const orders = await readOrders();
+  const releasedOrders = orders.filter(o => o.status === "RELEASED");
+  const totalSpent = releasedOrders.reduce((sum, o) => {
+    const orderTotal = (o.items || []).reduce((s, item) => {
+      const qty = Number(item.quantity || 0);
+      const price = Number(item.price || 0);
+      return s + price * qty;
+    }, 0);
+    return sum + orderTotal;
+  }, 0);
+
+  const totalEarned = Math.floor(totalSpent / 10);
+  const totalRedeemed = 0;
+  const tokenBalance = Math.max(0, totalEarned - totalRedeemed);
+
+  const transactionHistory = releasedOrders.map(o => {
+    const orderTotal = (o.items || []).reduce((s, item) => {
+      const qty = Number(item.quantity || 0);
+      const price = Number(item.price || 0);
+      return s + price * qty;
+    }, 0);
+    const tokens = Math.floor(orderTotal / 10);
+    return {
+      type: "Earned",
+      amount: tokens,
+      date: new Date(o.releasedAt || o.createdAt || Date.now()).toLocaleDateString("en-US"),
+      description: o.orderId
+    };
+  }).filter(tx => tx.amount > 0);
+
+  const redeemOptions = [
+    { name: "5% off next order", cost: 20 },
+    { name: "Free shipping", cost: 15 },
+    { name: "$10 voucher", cost: 40 }
+  ];
+
+  res.render('wallet', {
+    tokenBalance,
+    totalEarned,
+    totalRedeemed,
+    redeemOptions,
+    transactionHistory
+  });
+});
+
+// About
+app.get('/about', (req, res) => {
+  res.render('aboutUs');
+});
+
+// Add product
+app.get('/addProduct', async (req, res) => {
+  await loadBlockchainData();
+  res.render('addProduct', { acct: account });
+});
+
+app.post('/addProduct', upload.single('image'), async (req, res) => {
+  const { productId, name, description, price, stock, releaseDate, category } = req.body;
+  if (!productId || !name || !description || !price || !stock || !releaseDate || !category) {
+    return res.status(400).send("Missing required fields");
+  }
+
+  const imageName = req.file ? req.file.filename : null;
+  if (!imageName) return res.status(400).send("Image upload required");
+
+  const record = {
+    productId,
+    name,
+    description,
+    price: Number(price),
+    stock: Number(stock),
+    releaseDate,
+    category,
+    image: imageName
+  };
+
+  const products = await readProducts();
+  const exists = products.find(p => p.productId === productId);
+  if (exists) return res.status(409).send("Product ID already exists");
+
+  products.push(record);
+  await writeProducts(products);
+  jsonProducts.push(record);
+
+  res.redirect('/');
+});
 
 // Checkout 
 app.get('/checkout', async (req, res) => {
