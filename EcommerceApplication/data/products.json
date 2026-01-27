@@ -48,15 +48,5 @@
     "releaseDate": "2020-12-12",
     "category": "Accessories",
     "image": "Screenshot 2026-01-16 233930.png"
-  },
-  {
-    "productId": "PRD007",
-    "name": "Amazon eero Pro 7 | Mesh Wi-Fi 7 Router",
-    "description": "Supports Internet Plans up to 5 Gbps | Coverage up to 190 m² | Connects 200+ Devices | Hyper-connected.\r\nWi-Fi at the speed of life – eero Pro 7 delivers ultra-fast, reliable Wi-Fi for large homes and demanding business environments. Tri-band for maximum throughput with Wi-Fi 7 features like Multi-Link Operation (MLO)",
-    "price": 429.99,
-    "stock": 30,
-    "releaseDate": "2020-01-27",
-    "category": "Accessories",
-    "image": "1769448584963-585354901-31FS-TOUPTL._AC_SX522_.jpg"
   }
 ]

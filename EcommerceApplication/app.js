@@ -250,6 +250,8 @@ app.post('/addProduct', upload.single('image'), async (req, res) => {
   const imageName = req.file ? req.file.filename : null;
   if (!imageName) return res.status(400).send("Image upload required");
 
+  await loadBlockchainData();
+
   const record = {
     productId,
     name,
@@ -265,9 +267,70 @@ app.post('/addProduct', upload.single('image'), async (req, res) => {
   const exists = products.find(p => p.productId === productId);
   if (exists) return res.status(409).send("Product ID already exists");
 
+  // Write product data on-chain
+  try {
+    const gasRegister = await contractInfo.methods
+      .registerProduct()
+      .estimateGas({ from: account });
+    await contractInfo.methods.registerProduct().send({
+      from: account,
+      gas: Math.floor(gasRegister * 1.2)
+    });
+
+    const onChainId = await contractInfo.methods.getNoOfProducts().call();
+
+    const gasAdd = await contractInfo.methods.addProductInfo(
+      onChainId,
+      productId,
+      name,
+      category,
+      releaseDate
+    ).estimateGas({ from: account });
+    await contractInfo.methods.addProductInfo(
+      onChainId,
+      productId,
+      name,
+      category,
+      releaseDate
+    ).send({
+      from: account,
+      gas: Math.floor(gasAdd * 1.2)
+    });
+    record.onChainId = Number(onChainId);
+  } catch (err) {
+    console.error("Blockchain write failed:", err.message || err);
+    return res.status(500).send("Failed to write product to blockchain");
+  }
+
   products.push(record);
   await writeProducts(products);
   jsonProducts.push(record);
+
+  res.redirect('/');
+});
+
+// Delete product
+app.post('/deleteProduct/:id', async (req, res) => {
+  const id = req.params.id;
+
+  const products = await readProducts();
+  const target = products.find(p => p.productId === id);
+  const next = products.filter(p => p.productId !== id);
+
+  if (!target) return res.status(404).send("Product not found");
+
+  await writeProducts(next);
+
+  // Keep in-memory cache in sync
+  const idx = jsonProducts.findIndex(p => p.productId === id);
+  if (idx >= 0) jsonProducts.splice(idx, 1);
+
+  // Best-effort cleanup of uploaded image file
+  if (target.image) {
+    const imageName = path.basename(target.image);
+    const imagePath = path.join(imagesDir, imageName);
+    fs.promises.unlink(imagePath).catch(() => {});
+  }
 
   res.redirect('/');
 });
