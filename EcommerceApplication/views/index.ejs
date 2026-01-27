@@ -142,49 +142,57 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-custom navbar-light">
         <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center gap-2" href="/">Ecomme</a>
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/home">Ecomme</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="collapsibleNavbar">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link" href="/">Home</a>
+                        <a class="nav-link <%= (currentBase === '/home' || currentPath === '/') ? 'active-nav' : '' %>" href="/home">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/">Products</a>
+                        <a class="nav-link <%= currentBase === '/products' ? 'active-nav' : '' %>" href="/products">Products</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/addProduct">Add Product</a>
+                        <a class="nav-link <%= currentBase === '/addProduct' ? 'active-nav' : '' %>" href="/addProduct">Add Product</a>
+                    </li>
+                    <%- include("partials/admin-nav") %>
+                    <li class="nav-item">
+                        <a class="nav-link <%= currentBase === '/wallet' ? 'active-nav' : '' %>" href="/wallet">Wallet</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/wallet">Wallet</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/about">About Us</a>
+                        <a class="nav-link <%= currentBase === '/about' ? 'active-nav' : '' %>" href="/about">About Us</a>
                     </li>
                 </ul>
-                <form class="d-flex me-lg-3 my-2 my-lg-0" role="search">
-                    <input class="form-control me-2 nav-search" type="search" placeholder="Search products" aria-label="Search">
-                    <button class="btn btn-outline-dark nav-btn" type="submit">Search</button>
-                </form>
+                <div class="d-flex me-lg-3 my-2 my-lg-0">
+                    <input class="form-control nav-search" type="search" placeholder="Search products" aria-label="Search">
+                </div>
                 <div class="d-flex align-items-center gap-2">
+                    <% if (showCartNav) { %>
                     <a class="btn btn-dark nav-btn" href="/cart">Add to Cart</a>
-                    <a class="btn btn-outline-dark nav-btn" href="/login">Login</a>
+                    <% } %>
+                    <% if (user) { %>
+                    <form action="/logout" method="POST" class="m-0">
+                        <button class="btn btn-outline-light nav-btn" type="submit">Logout</button>
+                    </form>
                     <span class="navbar-text account-pill">Account: <%= acct %></span>
+                    <% } else { %>
+                    <a class="btn btn-outline-dark nav-btn" href="/login">Login</a>
+                    <% } %>
                 </div>
             </div>
         </div>
     </nav>
 
     <div class="container">
-        <% if (!status) { %>
+        <% if (!hideHero) { %>
         
         <div class="hero mb-4">
             <div class="d-flex flex-wrap gap-4 align-items-center">
                 <div class="flex-grow-1">
                     <div class="pill mb-3">Escrow-secured marketplace</div>
-                    <h1 class="mb-2">Welcome to Ecomme</h1>
+                    <h1 class="mb-2">Welcome to Ecomme<% if (user && user.name) { %>, <%= user.name %><% } %></h1>
                     <p class="lead mb-3">Shop and sell with confidence: every purchase is protected by on-chain escrow and clear delivery tracking.</p>
                     <div class="hero-cta">
                         <a class="btn btn-dark" href="#productGallery">Browse products</a>
@@ -253,14 +261,7 @@
                 </div>
             <% } %>
         </div>
-        <% } else { %>
-            <div class="loading-indicator">
-                Loading blockchain data...
-            </div>
-            <h1>Loading Data............!</h1>
-            <!-- <h4> status: <%= status %></h4> -->
-           
-          <% } %>
+        <% } %>
     </div>
 
     <script>
@@ -291,3 +292,5 @@
     </script>
 </body>
 </html>
+
+

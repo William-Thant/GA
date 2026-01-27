@@ -48,5 +48,23 @@
     "releaseDate": "2020-12-12",
     "category": "Accessories",
     "image": "Screenshot 2026-01-16 233930.png"
+  },
+  {
+    "productId": "PRD001",
+    "catalog": {
+      "name": "Samsung Galaxy S25 Ultra",
+      "description": "Galaxy S25 Ultra.  ",
+      "price": 1708,
+      "stock": 100,
+      "image": "1769457963370-907242748-Screenshot 2026-01-27 033220.png",
+      "category": "Smart Phone",
+      "releaseDate": "2025-02-03"
+    },
+    "productInfo": {
+      "id": "PRD001",
+      "name": "Samsung Galaxy S25 Ultra",
+      "category": "Smart Phone",
+      "releaseDate": "2025-02-03"
+    }
   }
 ]

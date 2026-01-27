@@ -3,6 +3,16 @@ const { Web3 } = require('web3');
 const fs = require("fs");
 const path = require("path");
 const EcommerceContract = require('./build/EcommerceContract.json');
+let UserRegistry;
+try {
+  UserRegistry = require('./build/UserRegistry.json');
+} catch {
+  try {
+    UserRegistry = require('../build/contracts/UserRegistry.json');
+  } catch {
+    UserRegistry = null;
+  }
+}
 const multer = require('multer');
 const session = require('express-session');
 
@@ -26,6 +36,14 @@ app.use(express.static(publicDir));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(session({ secret: 'ecommerce-secret', resave: false, saveUninitialized: true }));
+// expose session user to all views
+app.use((req, res, next) => {
+  res.locals.user = req.session.user || null;
+  res.locals.currentPath = req.path;
+  const seg = req.path.split('/').filter(Boolean)[0] || '';
+  res.locals.currentBase = '/' + seg;
+  next();
+});
 
 let GanacheWeb3;
 let account = '';
@@ -33,9 +51,62 @@ let sellerAccount = '';
 let listOfProductsSC = [];
 let contractInfo;
 let escrowInfo;
+let userRegistry;
 
 const productsDataPath = path.join(__dirname, "data", "products.json");
 const ordersDataPath = path.join(__dirname, "data", "orders.json");
+const usersDataPath = path.join(__dirname, "data", "users.json");
+const adminReqPath = path.join(__dirname, "data", "adminRequests.json");
+
+/* ===== Helpers for Products JSON (off-chain extras like image) ===== */
+async function ensureProductsFile() {
+  try { await fs.promises.access(productsDataPath); }
+  catch {
+    await fs.promises.mkdir(path.dirname(productsDataPath), { recursive: true });
+    await fs.promises.writeFile(productsDataPath, JSON.stringify([], null, 2));
+  }
+}
+async function readProducts() {
+  await ensureProductsFile();
+  return JSON.parse(await fs.promises.readFile(productsDataPath, "utf8"));
+}
+async function writeProducts(products) {
+  await fs.promises.mkdir(path.dirname(productsDataPath), { recursive: true });
+  await fs.promises.writeFile(productsDataPath, JSON.stringify(products, null, 2));
+}
+
+/* ===== Helpers for Users JSON ===== */
+async function ensureUsersFile() {
+  try { await fs.promises.access(usersDataPath); }
+  catch {
+    await fs.promises.mkdir(path.dirname(usersDataPath), { recursive: true });
+    await fs.promises.writeFile(usersDataPath, JSON.stringify([], null, 2));
+  }
+}
+async function readUsers() {
+  await ensureUsersFile();
+  return JSON.parse(await fs.promises.readFile(usersDataPath, "utf8"));
+}
+async function writeUsers(users) {
+  await fs.promises.mkdir(path.dirname(usersDataPath), { recursive: true });
+  await fs.promises.writeFile(usersDataPath, JSON.stringify(users, null, 2));
+}
+
+async function ensureAdminReqFile() {
+  try { await fs.promises.access(adminReqPath); }
+  catch {
+    await fs.promises.mkdir(path.dirname(adminReqPath), { recursive: true });
+    await fs.promises.writeFile(adminReqPath, JSON.stringify([], null, 2));
+  }
+}
+async function readAdminReq() {
+  await ensureAdminReqFile();
+  return JSON.parse(await fs.promises.readFile(adminReqPath, "utf8"));
+}
+async function writeAdminReq(reqs) {
+  await fs.promises.mkdir(path.dirname(adminReqPath), { recursive: true });
+  await fs.promises.writeFile(adminReqPath, JSON.stringify(reqs, null, 2));
+}
 
 // ===== Helpers for Orders JSON =====
 async function ensureOrdersFile() {
@@ -98,30 +169,216 @@ async function loadBlockchainData() {
     throw new Error(`PaymentEscrow not deployed on network ${networkId}. Run truffle migrate on the correct network.`);
   }
   escrowInfo = new web3.eth.Contract(PaymentEscrow.abi, escrowNetwork.address);
+
+  if (UserRegistry && UserRegistry.networks && UserRegistry.networks[networkId]) {
+    userRegistry = new web3.eth.Contract(UserRegistry.abi, UserRegistry.networks[networkId].address);
+  } else {
+    userRegistry = null;
+  }
 }
 
 /* ================= ROUTES ================= */
 
-// Home
-const jsonProducts = require("./data/products.json");
+async function fetchProductsFromChain() {
+  const list = [];
+  const total = await contractInfo.methods.getNoOfProducts().call();
+  for (let i = 1; i <= total; i++) {
+    const info = await contractInfo.methods.getProductInfo(i).call();
+    list.push({
+      productId: info.id,
+      productInfo: {
+        id: info.id,
+        name: info.name,
+        category: info.category,
+        releaseDate: info.releaseDate
+      },
+      catalog: {
+        name: info.name,
+        description: info.description,
+        price: Number(info.price),
+        stock: Number(info.stock),
+        image: info.image,
+        category: info.category,
+        releaseDate: info.releaseDate
+      }
+    });
+  }
+  return list;
+}
 
-app.get('/', async (req, res) => {
-  await loadBlockchainData();
+// Welcome page (landing)
+app.get('/', (_req, res) => res.render('welcome'));
+app.get('/welcome', (_req, res) => res.render('welcome'));
 
-  const cnt = jsonProducts.length; 
+// Auth pages
+app.get('/login', (req, res) => {
+  res.render('login', { error: null, success: req.query.success || null });
+});
 
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  const users = await readUsers();
+  const user = users.find(u => u.email === email && u.password === password);
+  if (!user) return res.status(401).render('login', { error: 'Invalid credentials', success: null });
+  req.session.user = { email: user.email, role: user.role, name: user.name };
+  res.redirect('/home');
+});
+
+app.post('/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/welcome');
+  });
+});
+
+app.get('/register', (_req, res) => {
+  res.render('register', { error: null });
+});
+
+app.post('/register', async (req, res) => {
+  const { name, email, password, phone, isAdmin } = req.body;
+  const role = isAdmin ? 'admin' : 'customer';
+  const users = await readUsers();
+  if (users.some(u => u.email === email)) {
+    return res.status(400).render('register', { error: 'Email already registered' });
+  }
+
+  // Admin request flow: create pending request for existing admins to approve
+  if (role === 'admin') {
+    const existingAdmins = users.filter(u => u.role === 'admin');
+    if (existingAdmins.length === 0) {
+      return res.status(403).render('register', { error: 'Admin request cannot be processed: no existing admin to review.' });
+    }
+    const reqs = await readAdminReq();
+    reqs.push({ name, email, password, phone, createdAt: new Date().toISOString() });
+    await writeAdminReq(reqs);
+    return res.render('login', { error: null, success: 'Your admin request is pending approval. Please wait for an admin to accept, then log in.' });
+  }
+
+  // Customer flow
+  users.push({ name, email, password, phone, role: 'customer' });
+  await writeUsers(users);
+
+  if (userRegistry) {
+    try {
+      await userRegistry.methods.upsertUser(
+        name,
+        email,
+        phone,
+        'customer'
+      ).send({ from: account, gas: 300000 });
+    } catch (err) {
+      console.warn("On-chain user registry update failed:", err.message || err);
+    }
+  }
+
+  res.render('login', { error: null, success: 'A new account has been successfully created. Please log in.' });
+});
+
+// ===== Admin requests review (admin only) =====
+function requireAdmin(req, res, next) {
+  if (!req.session.user || req.session.user.role !== 'admin') {
+    return res.status(403).send("Admin access required");
+  }
+  next();
+}
+
+app.get('/admin/requests', requireAdmin, async (req, res) => {
+  const requests = await readAdminReq();
+  res.render('adminRequests', { requests });
+});
+
+app.post('/admin/requests/:idx/approve', requireAdmin, async (req, res) => {
+  const idx = Number(req.params.idx);
+  const requests = await readAdminReq();
+  if (idx < 0 || idx >= requests.length) return res.redirect('/admin/requests');
+  const reqItem = requests[idx];
+
+  const users = await readUsers();
+  const existingIndex = users.findIndex(u => u.email === reqItem.email);
+  if (existingIndex >= 0) {
+    users[existingIndex] = { ...users[existingIndex], role: 'admin' };
+  } else {
+    users.push({ name: reqItem.name, email: reqItem.email, password: reqItem.password, phone: reqItem.phone, role: 'admin' });
+  }
+  await writeUsers(users);
+
+  if (userRegistry) {
+    try {
+      await userRegistry.methods.upsertUser(
+        reqItem.name,
+        reqItem.email,
+        reqItem.phone,
+        'admin'
+      ).send({ from: account, gas: 300000 });
+    } catch (err) {
+      console.warn("On-chain user registry update failed:", err.message || err);
+    }
+  }
+
+  requests.splice(idx, 1);
+  await writeAdminReq(requests);
+  res.redirect('/admin/requests');
+});
+
+app.post('/admin/requests/:idx/reject', requireAdmin, async (req, res) => {
+  const idx = Number(req.params.idx);
+  const requests = await readAdminReq();
+  if (idx < 0 || idx >= requests.length) return res.redirect('/admin/requests');
+  requests.splice(idx, 1);
+  await writeAdminReq(requests);
+  res.redirect('/admin/requests');
+});
+
+async function renderProductGallery(res, showCartNav, hideHero = false) {
+  let products = [];
+  try {
+    products = await fetchProductsFromChain();
+    const local = await readProducts();
+    products = products.map(p => {
+      const match = local.find(lp => lp.productId === p.productId);
+      if (match && (!p.catalog.image || p.catalog.image === "null")) {
+        p.catalog.image = match.catalog?.image || match.image || null;
+      }
+      return p;
+    });
+  } catch (err) {
+    console.error("Failed to load products on-chain, fallback to local:", err.message);
+    products = await readProducts();
+  }
+  const cnt = products.length;
   res.render('index', {
     acct: account,
-    products: jsonProducts,
-    status: false,
-    cnt: cnt
+    products,
+    status: false,       // status flag used for legacy loading state; keep false so grid shows
+    hideHero,
+    cnt,
+    showCartNav
   });
+}
+
+// Home page (no Add to Cart nav)
+app.get('/home', async (req, res) => {
+  await loadBlockchainData();
+  await renderProductGallery(res, false, false);
+});
+
+// Products gallery (with Add to Cart nav)
+app.get('/products', async (req, res) => {
+  await loadBlockchainData();
+  await renderProductGallery(res, true, true);
 });
 
 // Product detail
 app.get('/product/:id', async (req, res) => {
   await loadBlockchainData();
-  const product = jsonProducts.find(p => p.productId === req.params.id);
+  let product = null;
+  try {
+    const products = await fetchProductsFromChain();
+    product = products.find(p => p.productId === req.params.id);
+  } catch (e) {
+    const local = await readProducts();
+    product = local.find(p => p.productId === req.params.id);
+  }
   if (!product) return res.status(404).send("Not found");
 
   res.render('productDetail', {
@@ -136,12 +393,22 @@ app.get('/product/:id', async (req, res) => {
 app.post('/addToCart/:productId', (req, res) => {
   const id = req.params.productId;
   if (!req.session.cart) req.session.cart = [];
-  const p = jsonProducts.find(x => x.productId === id);
-  if (p) {
-    const existing = req.session.cart.find(i => i.productId === id);
-    existing ? existing.quantity++ : req.session.cart.push({ ...p, quantity: 1 });
-  }
-  res.redirect('/cart');
+  fetchProductsFromChain().then((all) => {
+    const p = all.find(x => x.productId === id);
+    if (p) {
+      const existing = req.session.cart.find(i => i.productId === id);
+      existing ? existing.quantity++ : req.session.cart.push({ ...p.catalog, productId: id, quantity: 1 });
+    }
+    res.redirect('/cart');
+  }).catch(async () => {
+    const local = await readProducts();
+    const p = local.find(x => x.productId === id);
+    if (p) {
+      const existing = req.session.cart.find(i => i.productId === id);
+      existing ? existing.quantity++ : req.session.cart.push({ ...p, quantity: 1 });
+    }
+    res.redirect('/cart');
+  });
 });
 
 // Cart
@@ -164,6 +431,66 @@ app.get('/cart', async (req, res) => {
     total,
     expectedTokens   
   });
+});
+
+// Add Product (form)
+app.get('/addProduct', async (req, res) => {
+  await loadBlockchainData();
+  res.render('addProduct', { acct: account });
+});
+
+// Add Product (submit + on-chain write)
+app.post('/addProduct', upload.single('image'), async (req, res) => {
+  try {
+    await loadBlockchainData();
+    const { productId, name, description, price, stock, releaseDate, category } = req.body;
+    const fileName = req.file ? req.file.filename : "";
+    const onchainId = productId && productId.trim().length ? productId : `PRD-${Date.now()}`;
+
+    // On-chain registration: numeric index then info with full fields
+    await contractInfo.methods.registerProduct().send({ from: account, gas: 500000 });
+    const newIndex = await contractInfo.methods.getNoOfProducts().call();
+    await contractInfo.methods.addProductInfo(
+      newIndex,
+      onchainId,
+      name,
+      category,
+      releaseDate,
+      description,
+      price,
+      stock,
+      fileName
+    ).send({ from: account, gas: 700000 });
+
+    // Update local metadata mirror (for quick reads / images)
+    const products = await readProducts();
+    const catalog = {
+      name,
+      description,
+      price: Number(price) || 0,
+      stock: Number(stock) || 0,
+      image: fileName,
+      category,
+      releaseDate
+    };
+    const base = {
+      productId: onchainId,
+      catalog,
+      productInfo: { id: onchainId, name, category, releaseDate }
+    };
+    const idx = products.findIndex(p => p.productId === onchainId);
+    if (idx >= 0) {
+      products[idx] = { ...products[idx], ...base, catalog: { ...products[idx].catalog, ...catalog } };
+    } else {
+      products.push(base);
+    }
+    await writeProducts(products);
+
+    res.redirect('/products');
+  } catch (err) {
+    console.error("Add product failed:", err);
+    res.status(500).send("Failed to add product: " + err.message);
+  }
 });
 
 

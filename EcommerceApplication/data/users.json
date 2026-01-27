@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Duncan",
+    "email": "duncan@gmail.com",
+    "password": "12345",
+    "phone": "12345",
+    "role": "admin"
+  },
+  {
+    "name": "Sam",
+    "email": "sam@gmail.com",
+    "password": "12345",
+    "phone": "12345",
+    "role": "customer"
+  },
+  {
+    "name": "Dean",
+    "email": "dean@gmail.com",
+    "password": "12345",
+    "phone": "12345",
+    "role": "customer"
+  }
+]
