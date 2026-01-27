@@ -1,36 +1,34 @@
 <nav class="navbar navbar-expand-lg navbar-custom navbar-light">
     <div class="container-fluid">
-        <a class="navbar-brand d-flex align-items-center gap-2" href="/">Ecomme</a>
+        <span class="navbar-brand d-flex align-items-center gap-2">&nbsp;</span>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="collapsibleNavbar">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
-                    <a class="nav-link" href="/">Home</a>
+                    <a class="nav-link <%= (currentBase === '/home' || currentPath === '/') ? 'active-nav' : '' %>" href="/home">Home</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/">Products</a>
+                    <a class="nav-link <%= currentBase === '/products' ? 'active-nav' : '' %>" href="/products">Products</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/addProduct">Add Product</a>
+                    <a class="nav-link <%= currentBase === '/addProduct' ? 'active-nav' : '' %>" href="/addProduct">Add Product</a>
+                </li>
+                <%- include('admin-nav') %>
+                <li class="nav-item">
+                    <a class="nav-link <%= currentBase === '/wallet' ? 'active-nav' : '' %>" href="/wallet">Wallet</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/wallet">Wallet</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/about">About Us</a>
+                    <a class="nav-link <%= currentBase === '/about' ? 'active-nav' : '' %>" href="/about">About Us</a>
                 </li>
             </ul>
             <form class="d-flex me-lg-3 my-2 my-lg-0" role="search">
-                <input class="form-control me-2 nav-search" type="search" placeholder="Search products" aria-label="Search">
-                <button class="btn btn-outline-dark nav-btn" type="submit">Search</button>
+                <input class="form-control nav-search" type="search" placeholder="Search products" aria-label="Search">
             </form>
             <div class="d-flex align-items-center gap-2">
+                <% if (typeof showCartNav === "undefined" || showCartNav) { %>
                 <a class="btn btn-dark nav-btn" href="/cart">Add to Cart</a>
-                <a class="btn btn-outline-dark nav-btn" href="/login">Login</a>
-                <% if (typeof acct !== "undefined" && acct) { %>
-                    <span class="navbar-text account-pill">Account: <%= acct %></span>
                 <% } %>
             </div>
         </div>

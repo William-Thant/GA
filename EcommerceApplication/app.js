@@ -365,7 +365,8 @@ app.get('/home', async (req, res) => {
 // Products gallery (with Add to Cart nav)
 app.get('/products', async (req, res) => {
   await loadBlockchainData();
-  await renderProductGallery(res, true, true);
+  // keep hero hidden? currently hides entire gallery because template wraps both in same block.
+  await renderProductGallery(res, true, false);
 });
 
 // Product detail

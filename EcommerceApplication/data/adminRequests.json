@@ -1,16 +1,1 @@
-[
-  {
-    "name": "Sammy",
-    "email": "sammy@gmail.com",
-    "password": "12345",
-    "phone": "12345",
-    "createdAt": "2026-01-26T21:06:22.564Z"
-  },
-  {
-    "name": "Sammy",
-    "email": "sammy@gmail.com",
-    "password": "12345",
-    "phone": "12345",
-    "createdAt": "2026-01-26T21:10:44.211Z"
-  }
-]
+[]

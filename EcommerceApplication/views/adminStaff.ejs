@@ -12,6 +12,7 @@
     <link rel='stylesheet' href='/style.css'>
 </head>
 <body class="page-shell">
+    <%- include('partials/topbar') %>
     <%- include('partials/navbar') %>
     <div class="container">
         <div class="staff-container" data-staff-admin data-escrow-address="<%= contractAddress || '' %>">

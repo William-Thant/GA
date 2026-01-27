@@ -19,5 +19,19 @@
     "password": "12345",
     "phone": "12345",
     "role": "customer"
+  },
+  {
+    "name": "Hose",
+    "email": "hose@gmail.com",
+    "password": "12345",
+    "phone": "12345",
+    "role": "admin"
+  },
+  {
+    "name": "Al",
+    "email": "al@gmail.com",
+    "password": "12345",
+    "phone": "12345",
+    "role": "admin"
   }
 ]
