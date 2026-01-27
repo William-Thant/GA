@@ -433,6 +433,58 @@ app.get('/cart', async (req, res) => {
   });
 });
 
+// Wallet & rewards
+app.get('/wallet', async (req, res) => {
+  const orders = await readOrders();
+  const releasedOrders = orders.filter(o => o.status === "RELEASED");
+  const totalSpent = releasedOrders.reduce((sum, o) => {
+    const orderTotal = (o.items || []).reduce((s, item) => {
+      const qty = Number(item.quantity || 0);
+      const price = Number(item.price || 0);
+      return s + price * qty;
+    }, 0);
+    return sum + orderTotal;
+  }, 0);
+
+  const totalEarned = Math.floor(totalSpent / 10);
+  const totalRedeemed = 0;
+  const tokenBalance = Math.max(0, totalEarned - totalRedeemed);
+
+  const transactionHistory = releasedOrders.map(o => {
+    const orderTotal = (o.items || []).reduce((s, item) => {
+      const qty = Number(item.quantity || 0);
+      const price = Number(item.price || 0);
+      return s + price * qty;
+    }, 0);
+    const tokens = Math.floor(orderTotal / 10);
+    return {
+      type: "Earned",
+      amount: tokens,
+      date: new Date(o.releasedAt || o.createdAt || Date.now()).toLocaleDateString("en-US"),
+      description: o.orderId
+    };
+  }).filter(tx => tx.amount > 0);
+
+  const redeemOptions = [
+    { name: "5% off next order", cost: 20 },
+    { name: "Free shipping", cost: 15 },
+    { name: "$10 voucher", cost: 40 }
+  ];
+
+  res.render('wallet', {
+    tokenBalance,
+    totalEarned,
+    totalRedeemed,
+    redeemOptions,
+    transactionHistory
+  });
+});
+
+// About
+app.get('/about', (req, res) => {
+  res.render('aboutUs');
+});
+
 // Add Product (form)
 app.get('/addProduct', async (req, res) => {
   await loadBlockchainData();
@@ -493,6 +545,27 @@ app.post('/addProduct', upload.single('image'), async (req, res) => {
   }
 });
 
+// Delete product
+app.post('/deleteProduct/:id', async (req, res) => {
+  const id = req.params.id;
+
+  const products = await readProducts();
+  const target = products.find(p => p.productId === id);
+  const next = products.filter(p => p.productId !== id);
+
+  if (!target) return res.status(404).send("Product not found");
+
+  await writeProducts(next);
+
+  // Best-effort cleanup of uploaded image file
+  const imageName = target.catalog?.image || target.image;
+  if (imageName) {
+    const imagePath = path.join(imagesDir, path.basename(imageName));
+    fs.promises.unlink(imagePath).catch(() => {});
+  }
+
+  res.redirect('/products');
+});
 
 // Checkout 
 app.get('/checkout', async (req, res) => {
