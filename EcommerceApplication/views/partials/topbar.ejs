@@ -35,3 +35,42 @@
     border-radius: 999px;
   }
 </style>
+
+<script>
+  (() => {
+    // Per-tab id stored in sessionStorage
+    const existing = sessionStorage.getItem('tabId');
+    const tabId = existing || crypto.randomUUID();
+    sessionStorage.setItem('tabId', tabId);
+
+    // Append ?tab=... to internal links and form actions; add hidden input for POSTs
+    const sameOrigin = (url) => {
+      try { const u = new URL(url, window.location.origin); return u.origin === window.location.origin; }
+      catch { return false; }
+    };
+
+    document.querySelectorAll('a[href^="/"]').forEach(a => {
+      if (!sameOrigin(a.href)) return;
+      const url = new URL(a.href, window.location.origin);
+      if (!url.searchParams.has('tab')) {
+        url.searchParams.set('tab', tabId);
+        a.href = url.pathname + url.search + url.hash;
+      }
+    });
+
+    document.querySelectorAll('form[action^="/"]').forEach(form => {
+      const url = new URL(form.action, window.location.origin);
+      if (!url.searchParams.has('tab')) {
+        url.searchParams.set('tab', tabId);
+        form.action = url.pathname + url.search + url.hash;
+      }
+      if (!form.querySelector('input[name="tab"]')) {
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'tab';
+        hidden.value = tabId;
+        form.appendChild(hidden);
+      }
+    });
+  })();
+</script>

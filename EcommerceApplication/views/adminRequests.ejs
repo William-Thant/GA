@@ -9,7 +9,10 @@
     <title>Admin Requests - Ecomme</title>
 </head>
 <body class="page-shell">
-    <div class="container">
+    <%- include('partials/topbar') %>
+    <%- include('partials/navbar') %>
+
+    <div class="container my-4">
         <div class="form-container">
             <h3 class="mb-3">Pending Admin Requests</h3>
             <% if (requests.length === 0) { %>

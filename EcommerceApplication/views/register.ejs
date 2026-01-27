@@ -41,6 +41,7 @@
                     </div>
                     <a class="btn btn-outline-dark btn-sm" href="/admin/requests" onclick="event.preventDefault(); alert('Admin review is handled by existing admins after your request is submitted.');">Admin login</a>
                 </div>
+                <input type="hidden" name="tab" id="tab-input">
                 <button type="submit" class="btn btn-dark w-100">Create account</button>
                 <div class="text-center">
                     <small>Already have an account? <a href="/login">Log in</a></small>
@@ -48,5 +49,20 @@
             </form>
         </div>
     </div>
+<script>
+  (() => {
+    const existing = sessionStorage.getItem('tabId');
+    const tabId = existing || crypto.randomUUID();
+    sessionStorage.setItem('tabId', tabId);
+    const inp = document.getElementById('tab-input');
+    if (inp) inp.value = tabId;
+    const form = document.querySelector('form[action="/register"]');
+    if (form) {
+      const url = new URL(form.action, window.location.origin);
+      url.searchParams.set('tab', tabId);
+      form.action = url.pathname + url.search + url.hash;
+    }
+  })();
+</script>
 </body>
 </html>

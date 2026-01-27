@@ -15,7 +15,6 @@ try {
 }
 const multer = require('multer');
 const session = require('express-session');
-const crypto = require('crypto');
 
 const publicDir = path.join(__dirname, "public");
 const imagesDir = path.join(publicDir, "images");
@@ -37,12 +36,9 @@ app.use(express.static(publicDir));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(session({ secret: 'ecommerce-secret', resave: false, saveUninitialized: true }));
-// expose user (prefer per-tab mapping) to all views
+// expose session user to all views
 app.use((req, res, next) => {
-  const tabId = req.query.tab || req.headers['x-tab-id'];
-  req.tabId = tabId;
-  const tabUser = tabId ? tabUsers.get(tabId) : null;
-  res.locals.user = tabUser || req.session.user || null;
+  res.locals.user = req.session.user || null;
   res.locals.currentPath = req.path;
   const seg = req.path.split('/').filter(Boolean)[0] || '';
   res.locals.currentBase = '/' + seg;
@@ -61,9 +57,6 @@ const productsDataPath = path.join(__dirname, "data", "products.json");
 const ordersDataPath = path.join(__dirname, "data", "orders.json");
 const usersDataPath = path.join(__dirname, "data", "users.json");
 const adminReqPath = path.join(__dirname, "data", "adminRequests.json");
-
-// In-memory map for per-tab user state (tabId -> user object)
-const tabUsers = new Map();
 
 /* ===== Helpers for Products JSON (off-chain extras like image) ===== */
 async function ensureProductsFile() {
@@ -227,17 +220,14 @@ app.post('/login', async (req, res) => {
   const users = await readUsers();
   const user = users.find(u => u.email === email && u.password === password);
   if (!user) return res.status(401).render('login', { error: 'Invalid credentials', success: null });
-  const tabId = req.body.tab || req.query.tab || req.tabId || crypto.randomUUID();
-  const userPayload = { email: user.email, role: user.role, name: user.name };
-  req.session.user = userPayload;
-  tabUsers.set(tabId, userPayload);
-  res.redirect(`/home?tab=${tabId}`);
+  req.session.user = { email: user.email, role: user.role, name: user.name };
+  res.redirect('/home');
 });
 
 app.post('/logout', (req, res) => {
-  const tabId = req.body.tab || req.query.tab || req.tabId;
-  if (tabId) tabUsers.delete(tabId);
-  req.session.destroy(() => res.redirect('/welcome'));
+  req.session.destroy(() => {
+    res.redirect('/welcome');
+  });
 });
 
 app.get('/register', (_req, res) => {

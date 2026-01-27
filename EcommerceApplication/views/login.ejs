@@ -27,6 +27,7 @@
                     <label class="form-label">Password</label>
                     <input type="password" class="form-control" name="password" required>
                 </div>
+                <input type="hidden" name="tab" id="tab-input">
                 <button type="submit" class="btn btn-dark w-100">Login</button>
                 <div class="text-center">
                     <small>New here? <a href="/register">Create an account</a></small>
@@ -34,5 +35,20 @@
             </form>
         </div>
     </div>
+    <script>
+      (() => {
+        const existing = sessionStorage.getItem('tabId');
+        const tabId = existing || crypto.randomUUID();
+        sessionStorage.setItem('tabId', tabId);
+        const inp = document.getElementById('tab-input');
+        if (inp) inp.value = tabId;
+        const form = document.querySelector('form[action="/login"]');
+        if (form) {
+          const url = new URL(form.action, window.location.origin);
+          url.searchParams.set('tab', tabId);
+          form.action = url.pathname + url.search + url.hash;
+        }
+      })();
+    </script>
 </body>
 </html>

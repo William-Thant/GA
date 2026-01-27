@@ -155,9 +155,11 @@
                     <li class="nav-item">
                         <a class="nav-link <%= currentBase === '/products' ? 'active-nav' : '' %>" href="/products">Products</a>
                     </li>
+                    <% if (user && user.role === 'admin') { %>
                     <li class="nav-item">
                         <a class="nav-link <%= currentBase === '/addProduct' ? 'active-nav' : '' %>" href="/addProduct">Add Product</a>
                     </li>
+                    <% } %>
                     <%- include("partials/admin-nav") %>
                     <li class="nav-item">
                         <a class="nav-link <%= currentBase === '/wallet' ? 'active-nav' : '' %>" href="/wallet">Wallet</a>
@@ -215,7 +217,9 @@
 
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="section-heading mb-0"><span>Product Gallery</span></div>
+            <% if (user && user.role === 'admin') { %>
             <a href="/addProduct" class="btn btn-outline-dark">Add product</a>
+            <% } %>
         </div>
         
         <div class="grid-container" id="productGallery">

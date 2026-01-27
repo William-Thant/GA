@@ -12,10 +12,12 @@
                 <li class="nav-item">
                     <a class="nav-link <%= currentBase === '/products' ? 'active-nav' : '' %>" href="/products">Products</a>
                 </li>
+                <% if (user && user.role === 'admin') { %>
                 <li class="nav-item">
                     <a class="nav-link <%= currentBase === '/addProduct' ? 'active-nav' : '' %>" href="/addProduct">Add Product</a>
                 </li>
                 <%- include('admin-nav') %>
+                <% } %>
                 <li class="nav-item">
                     <a class="nav-link <%= currentBase === '/wallet' ? 'active-nav' : '' %>" href="/wallet">Wallet</a>
                 </li>
