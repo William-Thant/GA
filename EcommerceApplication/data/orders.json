@@ -819,5 +819,71 @@
     "createdAt": "2026-01-27T07:18:22.094Z",
     "txHash": "0xc3a6f341a39c4e4bc635f98d003eaa7b8a5846fd55820cfd7e74bc28636e721b",
     "releasedAt": "2026-01-27T07:18:28.868Z"
+  },
+  {
+    "orderId": "ORD-CART-1769499565053",
+    "items": [
+      {
+        "productId": "PRD004",
+        "name": "Controller",
+        "description": "Sony PlayStation 5 DualSense Wireless Controller - Midnight Black",
+        "price": 93.99,
+        "stock": 100,
+        "releaseDate": "2020-12-12",
+        "category": "Accessories",
+        "image": "Screenshot 2026-01-16 233943.png",
+        "quantity": 1
+      },
+      {
+        "productId": "PRD005",
+        "name": "Mouse",
+        "description": "Logitech 910-005790 G203 Lightsync RGB Wired Gaming Mouse, Black",
+        "price": 23.68,
+        "stock": 100,
+        "releaseDate": "2020-12-12",
+        "category": "Accessories",
+        "image": "Screenshot 2026-01-16 233936.png",
+        "quantity": 1
+      }
+    ],
+    "buyerWallet": "0xa295395c6327ec0a1d2c366d994e75b170e4c441",
+    "deliveryAddress": "",
+    "totalEth": "0.0638",
+    "status": "PAID_ESCROW",
+    "createdAt": "2026-01-27T07:39:26.540Z"
+  },
+  {
+    "orderId": "ORD-CART-1769499622876",
+    "items": [
+      {
+        "productId": "PRD006",
+        "name": "Headset",
+        "description": "Acer Predator Galea 311 True Harmony Sound Gaming Headset: 50mm Drivers ",
+        "price": 93.99,
+        "stock": 100,
+        "releaseDate": "2020-12-12",
+        "category": "Accessories",
+        "image": "Screenshot 2026-01-16 233930.png",
+        "quantity": 1
+      },
+      {
+        "productId": "PRD004",
+        "name": "Controller",
+        "description": "Sony PlayStation 5 DualSense Wireless Controller - Midnight Black",
+        "price": 93.99,
+        "stock": 100,
+        "releaseDate": "2020-12-12",
+        "category": "Accessories",
+        "image": "Screenshot 2026-01-16 233943.png",
+        "quantity": 1
+      }
+    ],
+    "buyerWallet": "0xa295395c6327ec0a1d2c366d994e75b170e4c441",
+    "deliveryAddress": "",
+    "totalEth": "0.0990",
+    "status": "RELEASED",
+    "createdAt": "2026-01-27T07:40:25.384Z",
+    "txHash": "0xcee6c55722209e8c5d8c7fbd8a124eb3249a31c7f403d5c7e605059cde6792de",
+    "releasedAt": "2026-01-27T07:40:42.402Z"
   }
 ]

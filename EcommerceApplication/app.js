@@ -272,9 +272,10 @@ app.post('/addProduct', upload.single('image'), async (req, res) => {
     const gasRegister = await contractInfo.methods
       .registerProduct()
       .estimateGas({ from: account });
+    const gasRegisterLimit = (gasRegister * 12n) / 10n;
     await contractInfo.methods.registerProduct().send({
       from: account,
-      gas: Math.floor(gasRegister * 1.2)
+      gas: gasRegisterLimit
     });
 
     const onChainId = await contractInfo.methods.getNoOfProducts().call();
@@ -286,6 +287,7 @@ app.post('/addProduct', upload.single('image'), async (req, res) => {
       category,
       releaseDate
     ).estimateGas({ from: account });
+    const gasAddLimit = (gasAdd * 12n) / 10n;
     await contractInfo.methods.addProductInfo(
       onChainId,
       productId,
@@ -294,7 +296,7 @@ app.post('/addProduct', upload.single('image'), async (req, res) => {
       releaseDate
     ).send({
       from: account,
-      gas: Math.floor(gasAdd * 1.2)
+      gas: gasAddLimit
     });
     record.onChainId = Number(onChainId);
   } catch (err) {
