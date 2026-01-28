@@ -33,5 +33,12 @@
     "password": "12345",
     "phone": "12345",
     "role": "admin"
+  },
+  {
+    "name": "A",
+    "email": "a@gmail.com",
+    "password": "12345",
+    "phone": "12345",
+    "role": "admin"
   }
 ]
