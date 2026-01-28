@@ -12,9 +12,15 @@ Class: C003-03
 Date created: 23/01/2026
 */
 
+import "./LoyaltyToken.sol";
+
 contract PaymentEscrow {
     address public owner;
     mapping(address => bool) public staff;
+
+    // Loyalty rewards
+        LoyaltyToken public loyaltyToken;
+        uint256 public rewardRate; // tokens per 1 ETH, scaled to 18 decimals (e.g., 1000 * 1e18)
 
     enum OrderStatus {
         None,        // 0
@@ -38,6 +44,10 @@ contract PaymentEscrow {
     event Refunded(bytes32 indexed orderHash, string orderId, address indexed buyer, uint256 amountWei);
     event StaffUpdated(address indexed staffAddress, bool allowed);
 
+    // Loyalty events
+    event LoyaltyConfigured(address tokenAddress, uint256 rewardRate);
+    event LoyaltyMinted(bytes32 indexed orderHash, string orderId, address indexed buyer, uint256 tokenAmount);
+
     bool private locked;
     modifier nonReentrant() {
         require(!locked, "Reentrancy blocked");
@@ -56,9 +66,16 @@ contract PaymentEscrow {
         _;
     }
 
-    constructor() {
-        owner = msg.sender;
-        staff[msg.sender] = true;
+    constructor(address tokenAddress, uint256 _rewardRate) {
+    require(tokenAddress != address(0), "Invalid token");
+
+    owner = msg.sender;
+    staff[msg.sender] = true; // owner is default staff
+
+    loyaltyToken = LoyaltyToken(tokenAddress);
+    rewardRate = _rewardRate;
+
+    emit LoyaltyConfigured(tokenAddress, _rewardRate);
     }
 
     function _hash(string memory orderId) internal pure returns (bytes32) {
@@ -96,7 +113,17 @@ contract PaymentEscrow {
         require(ok, "Transfer failed");
 
         emit PaymentReleased(orderHash, orderId, o.seller, o.amountWei);
+        
+        // Mint loyalty tokens to buyer after successful delivery confirmation
+        uint256 tokenAmount = (o.amountWei * rewardRate) / 1e18;
+
+        if (tokenAmount > 0) {
+            loyaltyToken.mint(o.buyer, tokenAmount);
+            emit LoyaltyMinted(orderHash, orderId, o.buyer, tokenAmount);
+        }
+
     }
+
 
     // Optional: refund before delivery confirmation
     function refund(string calldata orderId) external nonReentrant {

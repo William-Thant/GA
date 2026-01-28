@@ -1,10 +1,25 @@
 const PaymentEscrow = artifacts.require("PaymentEscrow");
+const LoyaltyToken = artifacts.require("LoyaltyToken");
 
 contract("PaymentEscrow", (accounts) => {
-  const [buyer, seller, other] = accounts;
+  const [owner, buyer, seller, other] = accounts;
+
+  const rewardRate = web3.utils.toWei("1000", "ether"); // 1000 tokens per 1 ETH
+
+  let token;
+  let escrow;
+
+  beforeEach(async () => {
+    token = await LoyaltyToken.new({ from: owner });
+    escrow = await PaymentEscrow.new(token.address, rewardRate, { from: owner });
+
+    // allow escrow to mint tokens
+    await token.setMinter(escrow.address, { from: owner });
+
+    // owner is staff by default in your escrow constructor
+  });
 
   it("locks funds when buyer creates an order", async () => {
-    const escrow = await PaymentEscrow.new();
     await escrow.createOrder("ORD-1", seller, {
       from: buyer,
       value: web3.utils.toWei("1", "ether"),
@@ -17,38 +32,39 @@ contract("PaymentEscrow", (accounts) => {
   });
 
   it("rejects duplicate orderId", async () => {
-    const escrow = await PaymentEscrow.new();
     await escrow.createOrder("ORD-2", seller, { from: buyer, value: 1000 });
 
+    let reverted = false;
     try {
       await escrow.createOrder("ORD-2", seller, { from: buyer, value: 1000 });
-      assert.fail("Expected revert");
     } catch (e) {
-      assert(e.message.includes("Order exists"));
+      reverted = true;
+      assert(e.message.includes("Order exists"), "Expected 'Order exists'");
     }
+    assert.equal(reverted, true, "Expected revert");
   });
 
-  it("only buyer can confirm delivery (interim)", async () => {
-    const escrow = await PaymentEscrow.new();
+  it("only staff can confirm delivery", async () => {
     await escrow.createOrder("ORD-3", seller, { from: buyer, value: 1000 });
 
+    let reverted = false;
     try {
       await escrow.confirmDelivery("ORD-3", { from: other });
-      assert.fail("Expected revert");
     } catch (e) {
-      assert(e.message.includes("Only buyer"));
+      reverted = true;
+      assert(e.message.includes("Only staff"), "Expected 'Only staff'");
     }
+    assert.equal(reverted, true, "Expected revert");
   });
 
-  it("releases funds to seller on delivery confirmation", async () => {
-    const escrow = await PaymentEscrow.new();
+  it("releases funds to seller on delivery confirmation by staff", async () => {
     await escrow.createOrder("ORD-4", seller, {
       from: buyer,
       value: web3.utils.toWei("0.5", "ether"),
     });
 
     const balBefore = BigInt(await web3.eth.getBalance(seller));
-    await escrow.confirmDelivery("ORD-4", { from: buyer });
+    await escrow.confirmDelivery("ORD-4", { from: owner }); // owner is staff
     const balAfter = BigInt(await web3.eth.getBalance(seller));
 
     assert(balAfter > balBefore, "seller should receive funds");
@@ -57,7 +73,6 @@ contract("PaymentEscrow", (accounts) => {
   });
 
   it("refunds buyer before delivery confirmation", async () => {
-    const escrow = await PaymentEscrow.new();
     await escrow.createOrder("ORD-5", seller, { from: buyer, value: 2000 });
 
     await escrow.refund("ORD-5", { from: buyer });
