@@ -192,6 +192,7 @@ async function fetchProductsFromChain() {
   for (let i = 1; i <= total; i++) {
     const info = await contractInfo.methods.getProductInfo(i).call();
     list.push({
+      chainIndex: i,
       productId: info.id,
       productInfo: {
         id: info.id,
@@ -288,6 +289,13 @@ app.post('/register', async (req, res) => {
 function requireAdmin(req, res, next) {
   if (!req.session.user || req.session.user.role !== 'admin') {
     return res.status(403).send("Admin access required");
+  }
+  next();
+}
+
+function blockAdminCart(req, res, next) {
+  if (res.locals.user && res.locals.user.role === 'admin') {
+    return res.status(403).send("Cart is not available for admin accounts.");
   }
   next();
 }
@@ -400,8 +408,90 @@ app.get('/product/:id', async (req, res) => {
   });
 });
 
+// Edit product (form)
+app.get('/editProduct/:id', requireAdmin, async (req, res) => {
+  await loadBlockchainData();
+  const id = req.params.id;
+  let product = null;
+  let chainIndex = null;
+
+  try {
+    const onchain = await fetchProductsFromChain();
+    const found = onchain.find(p => p.productId === id);
+    if (found) {
+      product = found;
+      chainIndex = found.chainIndex;
+    }
+  } catch (e) {
+    // fall back to local
+  }
+
+  if (!product) {
+    const local = await readProducts();
+    product = local.find(p => p.productId === id);
+  } else {
+    const local = await readProducts();
+    const match = local.find(p => p.productId === id);
+    if (match) {
+      product = {
+        ...product,
+        catalog: { ...product.catalog, ...match.catalog, image: match.catalog?.image || product.catalog?.image }
+      };
+    }
+  }
+
+  if (!product) return res.status(404).send("Product not found");
+
+  res.render('editProduct', { acct: account, product, chainIndex });
+});
+
+// Edit product (submit)
+app.post('/editProduct/:id', requireAdmin, upload.single('image'), async (req, res) => {
+  await loadBlockchainData();
+  const id = req.params.id;
+  const { name, description, price, stock, category, releaseDate, chainIndex } = req.body;
+
+  const products = await readProducts();
+  const idx = products.findIndex(p => p.productId === id);
+  if (idx < 0) return res.status(404).send("Product not found");
+
+  const existing = products[idx];
+  const oldImage = existing.catalog?.image || existing.image || "";
+  const newImage = req.file ? req.file.filename : oldImage;
+
+  const updatedCatalog = {
+    ...existing.catalog,
+    name,
+    description,
+    price: Number(price) || 0,
+    stock: Number(stock) || 0,
+    image: newImage,
+    category,
+    releaseDate
+  };
+
+  products[idx] = {
+    ...existing,
+    productId: id,
+    catalog: updatedCatalog,
+    productInfo: { ...(existing.productInfo || {}), id, name, category, releaseDate }
+  };
+  await writeProducts(products);
+
+  const chainNum = Number(chainIndex);
+  if (!Number.isNaN(chainNum) && chainNum > 0 && contractInfo) {
+    try {
+      await contractInfo.methods.addProductInfo(chainNum, id, name, category, releaseDate).send({ from: account, gas: 600000 });
+    } catch (err) {
+      console.warn("On-chain edit failed (continuing with local changes):", err.message || err);
+    }
+  }
+
+  res.redirect('/products');
+});
+
 // Add to cart
-app.post('/addToCart/:productId', (req, res) => {
+app.post('/addToCart/:productId', blockAdminCart, (req, res) => {
   const id = req.params.productId;
   if (!req.session.cart) req.session.cart = [];
   fetchProductsFromChain().then((all) => {
@@ -423,7 +513,7 @@ app.post('/addToCart/:productId', (req, res) => {
 });
 
 // Cart
-app.get('/cart', async (req, res) => {
+app.get('/cart', blockAdminCart, async (req, res) => {
   await loadBlockchainData();
 
   const cartItems = req.session.cart || [];
@@ -557,7 +647,7 @@ app.post('/addProduct', requireAdmin, upload.single('image'), async (req, res) =
 });
 
 // Delete product
-app.post('/deleteProduct/:id', async (req, res) => {
+app.post('/deleteProduct/:id', requireAdmin, async (req, res) => {
   const id = req.params.id;
 
   const products = await readProducts();
@@ -579,7 +669,7 @@ app.post('/deleteProduct/:id', async (req, res) => {
 });
 
 // Checkout 
-app.get('/checkout', async (req, res) => {
+app.get('/checkout', blockAdminCart, async (req, res) => {
   await loadBlockchainData();
 
   const cartItems = req.session.cart || [];

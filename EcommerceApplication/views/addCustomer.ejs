@@ -175,7 +175,9 @@
                     <input class="form-control nav-search" type="search" placeholder="Search products" aria-label="Search">
                 </div>
                 <div class="d-flex align-items-center gap-2">
+                    <% if (!(user && user.role === 'admin')) { %>
                     <a class="btn btn-dark nav-btn" href="/cart">Add to Cart</a>
+                    <% } %>
                 </div>
             </div>
         </div>

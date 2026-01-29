@@ -172,7 +172,7 @@
                     <input class="form-control nav-search" type="search" placeholder="Search products" aria-label="Search">
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <% if (showCartNav) { %>
+                    <% if (showCartNav && !(user && user.role === 'admin')) { %>
                     <a class="btn btn-dark nav-btn" href="/cart">Add to Cart</a>
                     <% } %>
                 </div>
@@ -247,12 +247,17 @@
                     </a>
                     <% if (catalog) { %>
                         <div class="product-actions">
+                            <% if (!(user && user.role === 'admin')) { %>
                             <form action="/addToCart/<%= p.productId %>" method="POST" style="display: inline;">
                                 <button type="submit" class="btn btn-sm btn-success">Add to Cart</button>
                             </form>
+                            <% } %>
+                            <% if (user && user.role === 'admin') { %>
+                            <a href="/editProduct/<%= p.productId %>" class="btn btn-sm btn-outline-primary me-2">Edit</a>
                             <form action="/deleteProduct/<%= linkId %>" method="POST" style="display: inline;">
                                 <button type="submit" class="btn btn-sm btn-outline-danger delete-btn">Delete</button>
                             </form>
+                            <% } %>
                         </div>
                     <% } %>
                 </div>

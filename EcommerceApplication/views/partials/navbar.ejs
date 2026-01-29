@@ -29,7 +29,7 @@
                 <input class="form-control nav-search" type="search" placeholder="Search products" aria-label="Search">
             </form>
             <div class="d-flex align-items-center gap-2">
-                <% if (typeof showCartNav === "undefined" || showCartNav) { %>
+                <% if ((typeof showCartNav === "undefined" || showCartNav) && !(user && user.role === 'admin')) { %>
                 <a class="btn btn-dark nav-btn" href="/cart">Add to Cart</a>
                 <% } %>
             </div>
