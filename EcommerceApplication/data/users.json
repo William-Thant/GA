@@ -33,5 +33,12 @@
     "password": "12345",
     "phone": "12345",
     "role": "admin"
+  },
+  {
+    "name": "William",
+    "email": "kaungpersonal@gmail.com",
+    "password": "123456",
+    "phone": "80358244",
+    "role": "customer"
   }
 ]
