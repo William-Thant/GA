@@ -885,5 +885,26 @@
     "createdAt": "2026-01-27T07:40:25.384Z",
     "txHash": "0xcee6c55722209e8c5d8c7fbd8a124eb3249a31c7f403d5c7e605059cde6792de",
     "releasedAt": "2026-01-27T07:40:42.402Z"
+  },
+  {
+    "orderId": "ORD-CART-1769568228228",
+    "items": [
+      {
+        "productId": "PRD005",
+        "name": "Mouse",
+        "description": "Logitech 910-005790 G203 Lightsync RGB Wired Gaming Mouse, Black",
+        "price": 23.68,
+        "stock": 100,
+        "releaseDate": "2020-12-12",
+        "category": "Accessories",
+        "image": "Screenshot 2026-01-16 233936.png",
+        "quantity": 1
+      }
+    ],
+    "buyerWallet": "0x820764f410e833b83428382f4c02c8238e940a1f",
+    "deliveryAddress": "Woodlands Ave 9",
+    "totalEth": "0.0168",
+    "status": "PAID_ESCROW",
+    "createdAt": "2026-01-28T02:44:10.516Z"
   }
 ]
