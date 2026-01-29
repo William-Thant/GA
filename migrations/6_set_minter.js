@@ -2,12 +2,8 @@ const LoyaltyToken = artifacts.require("LoyaltyToken");
 const PaymentEscrow = artifacts.require("PaymentEscrow");
 
 module.exports = async function (deployer, network, accounts) {
-  await deployer.deploy(LoyaltyToken);
   const token = await LoyaltyToken.deployed();
-
-  const rewardRate = web3.utils.toWei("1000", "ether"); // 1000 tokens per 1 ETH
-  await deployer.deploy(PaymentEscrow, token.address, rewardRate);
-
   const escrow = await PaymentEscrow.deployed();
+
   await token.setMinter(escrow.address, { from: accounts[0] });
 };
