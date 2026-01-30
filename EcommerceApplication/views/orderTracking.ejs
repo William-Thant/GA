@@ -19,6 +19,7 @@
             <h1 class="mb-3">Order Tracking</h1>
             <div class="mb-3"><strong>Order ID:</strong> <%= order.orderId %></div>
             <div class="mb-3"><strong>Status:</strong> <%= order.status %></div>
+            <div class="mb-3"><strong>Delivery Status:</strong> <%= order.deliveryStatus || "PENDING" %></div>
             <div class="mb-3"><strong>Buyer Wallet:</strong> <%= order.buyerWallet || "-" %></div>
             <div class="mb-3"><strong>Delivery Address:</strong> <%= order.deliveryAddress || "-" %></div>
             <div class="mb-3"><strong>Created:</strong> <%= order.createdAt || "-" %></div>

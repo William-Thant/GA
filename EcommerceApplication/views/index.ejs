@@ -155,6 +155,11 @@
                     <li class="nav-item">
                         <a class="nav-link <%= currentBase === '/products' ? 'active-nav' : '' %>" href="/products">Products</a>
                     </li>
+                    <% if (user && user.role !== 'admin') { %>
+                    <li class="nav-item">
+                        <a class="nav-link <%= currentBase === '/my-orders' ? 'active-nav' : '' %>" href="/my-orders">My Orders</a>
+                    </li>
+                    <% } %>
                     <% if (user && user.role === 'admin') { %>
                     <li class="nav-item">
                         <a class="nav-link <%= currentBase === '/addProduct' ? 'active-nav' : '' %>" href="/addProduct">Add Product</a>
@@ -214,6 +219,29 @@
                 </div>
             </div>
         </div>
+
+        <% if (buyerOrders && buyerOrders.length && user && user.role !== 'admin') { %>
+        <div class="stats-container mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="section-heading mb-0"><span>Your Recent Orders</span></div>
+                <a class="btn btn-outline-dark btn-sm" href="/my-orders">View all</a>
+            </div>
+            <div class="list-group">
+                <% buyerOrders.slice(0, 5).forEach(order => { %>
+                    <div class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <div class="fw-semibold"><%= order.orderId %></div>
+                            <div class="small text-muted">Delivery: <%= order.deliveryStatus || "PENDING" %></div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-secondary"><%= order.status %></span>
+                            <a class="btn btn-sm btn-outline-primary" href="/trackDelivery?orderId=<%= encodeURIComponent(order.orderId) %>">Track</a>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+        </div>
+        <% } %>
 
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="section-heading mb-0"><span>Product Gallery</span></div>

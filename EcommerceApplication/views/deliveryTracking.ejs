@@ -62,6 +62,7 @@
             <h5>Tracking ID: <%= deliveryStatus?.trackingId || "-" %></h5>
             <p><strong>Order ID:</strong> <%= escrowData.orderId %></p>
             <p><strong>Carrier:</strong> <%= deliveryStatus?.carrier || "-" %></p>
+            <p><strong>Delivery Status (Admin):</strong> <%= orderRecord?.deliveryStatus || "PENDING" %></p>
             <p><strong>Last Updated:</strong>
               <%= deliveryStatus?.lastUpdated ? new Date(deliveryStatus.lastUpdated).toLocaleString() : "-" %>
             </p>
@@ -87,8 +88,8 @@
           <% }); %>
         </div>
 
-        <% if (escrowData.status == 1) { %>
-          <!-- FundsLocked = 1, so buyer can confirm delivery now -->
+        <% if (escrowData.status == 1 && (orderRecord?.deliveryStatus === "OUT_FOR_DELIVERY")) { %>
+          <!-- FundsLocked = 1 and admin marked out for delivery -->
           <form action="/escrow/confirm" method="POST" class="mt-4">
             <input type="hidden" name="orderId" value="<%= escrowData.orderId %>">
             <button type="submit" class="confirm-btn">Confirm Delivery & Release Funds</button>
@@ -96,6 +97,10 @@
           <p class="text-muted mt-2">
             Confirming delivery will release funds to the seller. (Token awarding depends on your loyalty feature route.)
           </p>
+        <% } else if (escrowData.status == 1) { %>
+          <div class="alert alert-warning mt-4">
+            Waiting for admin to mark the order as OUT_FOR_DELIVERY before you can confirm.
+          </div>
         <% } else if (escrowData.status == 2) { %>
           <p class="text-success mt-4">Delivery confirmed! Funds have been released to the seller.</p>
         <% } else if (escrowData.status == 3) { %>

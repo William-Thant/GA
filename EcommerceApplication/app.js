@@ -131,6 +131,9 @@ function normalizeChainProduct(chain) {
   };
   return { catalog, productInfo };
 }
+function normalizeAddress(addr) {
+  return (addr || "").toLowerCase();
+}
 
 /* ===== Helpers for Users JSON ===== */
 async function ensureUsersFile() {
@@ -496,6 +499,12 @@ function requireAdmin(req, res, next) {
   }
   next();
 }
+function requireLogin(req, res, next) {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  next();
+}
 
 function blockAdminCart(req, res, next) {
   if (res.locals.user && res.locals.user.role === 'admin') {
@@ -551,7 +560,7 @@ app.post('/admin/requests/:idx/reject', requireAdmin, async (req, res) => {
   res.redirect('/admin/requests');
 });
 
-async function renderProductGallery(res, showCartNav, hideHero = false) {
+async function renderProductGallery(req, res, showCartNav, hideHero = false) {
   let products = [];
   try {
     const chain = await fetchProductsFromChain();
@@ -604,27 +613,40 @@ async function renderProductGallery(res, showCartNav, hideHero = false) {
     });
   }
   const cnt = products.length;
+  let buyerOrders = [];
+  let buyerWallet = null;
+  if (res.locals.user && res.locals.user.role !== "admin") {
+    buyerWallet = req.session.buyerWallet || null;
+    if (buyerWallet) {
+      const orders = await readOrders();
+      buyerOrders = orders
+        .filter(o => normalizeAddress(o.buyerWallet) === normalizeAddress(buyerWallet))
+        .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    }
+  }
   res.render('index', {
     acct: account,
     products,
     status: false,       // status flag used for legacy loading state; keep false so grid shows
     hideHero,
     cnt,
-    showCartNav
+    showCartNav,
+    buyerOrders,
+    buyerWallet
   });
 }
 
 // Home page (no Add to Cart nav)
 app.get('/home', async (req, res) => {
   await loadBlockchainData();
-  await renderProductGallery(res, false, false);
+  await renderProductGallery(req, res, false, false);
 });
 
 // Products gallery (with Add to Cart nav)
 app.get('/products', async (req, res) => {
   await loadBlockchainData();
   // keep hero hidden? currently hides entire gallery because template wraps both in same block.
-  await renderProductGallery(res, true, false);
+  await renderProductGallery(req, res, true, false);
 });
 
 // Product detail
@@ -1007,18 +1029,91 @@ app.post('/orders', async (req, res) => {
       deliveryAddress,
       totalEth,
       status: "PAID_ESCROW",
+      deliveryStatus: "PENDING",
+      deliveryUpdatedAt: new Date().toISOString(),
       createdAt: new Date().toISOString()
     };
 
     const orders = await readOrders();
     orders.push(record);
     await writeOrders(orders);
+    if (buyerWallet) req.session.buyerWallet = buyerWallet;
 
     res.json({ orderId: finalId });
   } catch (err) {
     console.error("Create order failed:", err);
     res.status(500).json({ error: "Failed to create order" });
   }
+});
+
+// Buyer orders (only their wallet)
+app.get('/my-orders', requireLogin, async (req, res) => {
+  const wallet = normalizeAddress(req.query.wallet || req.session.buyerWallet);
+  const orders = await readOrders();
+  const filtered = wallet
+    ? orders.filter(o => normalizeAddress(o.buyerWallet) === wallet)
+    : [];
+
+  res.render('buyerOrders', {
+    orders: filtered,
+    buyerWallet: wallet || null
+  });
+});
+
+// Buyer sets wallet for filtering orders
+app.post('/my-orders/wallet', requireLogin, async (req, res) => {
+  const wallet = normalizeAddress(req.body.wallet);
+  if (!wallet || wallet.length < 6) {
+    return res.redirect('/my-orders');
+  }
+  req.session.buyerWallet = wallet;
+  res.redirect('/my-orders');
+});
+
+// Admin orders (all buyers)
+app.get('/admin/orders', requireAdmin, async (req, res) => {
+  await loadBlockchainData();
+  const orders = await readOrders();
+  const sorted = orders.slice().sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  res.render('adminOrders', {
+    orders: sorted,
+    contractAddress: escrowInfo?.options?.address || ''
+  });
+});
+
+// Admin updates delivery status
+app.post('/admin/orders/:orderId/delivery', requireAdmin, async (req, res) => {
+  const orderId = req.params.orderId;
+  const nextStatus = req.body.status;
+  const allowed = new Set(["PENDING", "OUT_FOR_DELIVERY", "DELIVERED"]);
+  if (!allowed.has(nextStatus)) {
+    return res.status(400).send("Invalid delivery status");
+  }
+  const orders = await readOrders();
+  const idx = orders.findIndex(o => o.orderId === orderId);
+  if (idx >= 0) {
+    orders[idx].deliveryStatus = nextStatus;
+    orders[idx].deliveryUpdatedAt = new Date().toISOString();
+    await writeOrders(orders);
+  }
+  res.redirect('/admin/orders');
+});
+
+// Admin updates payment/order status
+app.post('/admin/orders/:orderId/status', requireAdmin, async (req, res) => {
+  const orderId = req.params.orderId;
+  const nextStatus = req.body.status;
+  const allowed = new Set(["PAID_ESCROW", "SHIPPED", "DELIVERED", "RELEASED", "REFUNDED"]);
+  if (!allowed.has(nextStatus)) {
+    return res.status(400).send("Invalid status");
+  }
+  const orders = await readOrders();
+  const idx = orders.findIndex(o => o.orderId === orderId);
+  if (idx >= 0) {
+    orders[idx].status = nextStatus;
+    await writeOrders(orders);
+  }
+  res.redirect('/admin/orders');
 });
 
 // Order Details
@@ -1056,6 +1151,14 @@ app.get("/trackDelivery", async (req, res) => {
   if (!orderId) return res.redirect("/");
 
   await loadBlockchainData();
+  const orders = await readOrders();
+  const orderRecord = orders.find(o => o.orderId === orderId) || null;
+  const sessionWallet = normalizeAddress(req.session.buyerWallet);
+  if (req.session.user?.role !== "admin") {
+    if (!sessionWallet || !orderRecord || normalizeAddress(orderRecord.buyerWallet) !== sessionWallet) {
+      return res.status(403).send("Access denied");
+    }
+  }
 
   // Pull escrow state (FundsLocked / Released / Refunded)
   let escrowData = null;
@@ -1086,7 +1189,7 @@ app.get("/trackDelivery", async (req, res) => {
     ],
   };
 
-  res.render("deliveryTracking", { acct: account, escrowData, deliveryStatus });
+  res.render("deliveryTracking", { acct: account, escrowData, deliveryStatus, orderRecord });
 });
 
 // Debug: fetch escrow order by id
@@ -1117,6 +1220,13 @@ app.post("/escrow/confirm", async (req, res, next) => {
   try {
     const { orderId, productId } = req.body;
     if (!orderId) return res.status(400).send("Missing orderId");
+
+    const orders = await readOrders();
+    const orderRecord = orders.find(o => o.orderId === orderId);
+    if (!orderRecord) return res.status(404).send("Order not found");
+    if (orderRecord.deliveryStatus !== "OUT_FOR_DELIVERY") {
+      return res.status(400).send("Delivery not confirmed by admin yet");
+    }
 
     await loadBlockchainData();
     let escrowOrder;
