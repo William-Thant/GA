@@ -39,12 +39,16 @@
         if (!account) await connectWallet();
 
         const ethAmount = container.dataset.ethAmount;
+        const orderId = container.dataset.orderId || `ORD-${Date.now()}`;
+        const deliveryField = document.getElementById("deliveryAddress");
+        const deliveryAddress = deliveryField ? deliveryField.value : "";
+
         const payload = {
-          orderId: container.dataset.orderId,
+          orderId,
           items: JSON.parse(container.dataset.orderItems || "[]"),
           buyerWallet: account,
           totalEth: ethAmount,
-          deliveryAddress: document.getElementById("deliveryAddress").value
+          deliveryAddress
         };
 
         setText(statusEl, "Creating order...");
@@ -60,7 +64,7 @@
         const signer = await provider.getSigner();
         const contract = new ethers.Contract(container.dataset.escrowAddress, ESCROW_ABI, signer);
 
-        const tx = await contract.createOrder(data.orderId, container.dataset.sellerAddress, {
+        const tx = await contract.createOrder(data.orderId || orderId, container.dataset.sellerAddress, {
           value: ethers.parseEther(String(ethAmount))
         });
 

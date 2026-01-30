@@ -47,28 +47,33 @@
                           <button type="submit" class="btn btn-outline-danger">Delete</button>
                         </form>
                       </div>
-                    <% } else { %>
-                      <form action="/escrow/buy/<%= linkId %>" method="POST" data-escrow data-escrow-form
-                            data-escrow-address="<%= contractAddress || '' %>"
-                            data-seller-address="<%= sellerAcct || '' %>"
-                            data-order-endpoint="/orders"
-                            data-product-id="<%= linkId %>"
-                            data-order-items='<%- JSON.stringify([{ productId: linkId, name: catalog.name, price: (catalog.price ?? 0), quantity: 1 }]) %>'>
-                          <div class="alert alert-secondary py-2 mb-2">
-                              <div><strong>Wallet:</strong> <span data-wallet-status>Not connected</span></div>
-                              <div><strong>Address:</strong> <span data-wallet-address>-</span></div>
-                              <button type="button" class="btn btn-sm btn-outline-dark mt-2" data-connect-wallet>
-                                  Connect MetaMask
-                              </button>
-                          </div>
-                          <div class="mb-3">
-                              <label for="priceEth" class="form-label">Price in ETH</label>
-                              <input type="number" step="0.0001" min="0" class="form-control" id="priceEth" name="priceEth" required data-eth-input>
-                          </div>
-                          <div class="small text-muted mb-2">Payment is locked in escrow until delivery is confirmed.</div>
-                          <button type="submit" class="buy-btn" data-escrow-submit>Buy Now with MetaMask</button>
-                          <div class="small text-danger mt-2" data-escrow-status></div>
-                      </form>
+                    <% } else { 
+                        const orderId = `ORD-PROD-${Date.now()}`;
+                        const ethAmount = ((catalog.price ?? 0) / 2000).toFixed(4);
+                    %>
+                      <div class="escrow-info mt-3"
+                           data-escrow
+                           data-escrow-address="<%= contractAddress || '' %>"
+                           data-seller-address="<%= sellerAcct || '' %>"
+                           data-order-endpoint="/orders"
+                           data-order-id="<%= orderId %>"
+                           data-eth-amount="<%= ethAmount %>"
+                           data-order-items='<%- JSON.stringify([{ productId: linkId, name: catalog.name, price: (catalog.price ?? 0), quantity: 1 }]) %>'>
+                        <div class="alert alert-secondary py-2 mb-2">
+                            <div><strong>Wallet:</strong> <span data-wallet-status>Not connected</span></div>
+                            <div><strong>Address:</strong> <span data-wallet-address>-</span></div>
+                            <button type="button" class="btn btn-sm btn-outline-dark mt-2" data-connect-wallet>
+                                Connect MetaMask
+                            </button>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Price in ETH</label>
+                            <div class="form-control" readonly><%= ethAmount %></div>
+                        </div>
+                        <div class="small text-muted mb-2">Payment is locked in escrow until delivery is confirmed.</div>
+                        <button type="button" class="buy-btn" data-escrow-submit>Buy Now with MetaMask</button>
+                        <div class="small text-danger mt-2" data-escrow-status></div>
+                      </div>
                       <div class="loyalty-info">
                           <h5>Loyalty Tokens</h5>
                           <p>After delivery confirmation, you will automatically earn loyalty tokens through our smart contract. These tokens can be used for future discounts and rewards.</p>
