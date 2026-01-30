@@ -1619,8 +1619,8 @@
     "deliveryAddress": "",
     "totalEth": "0.8540",
     "status": "PAID_ESCROW",
-    "deliveryStatus": "PENDING",
-    "deliveryUpdatedAt": "2026-01-30T12:58:23.098Z",
+    "deliveryStatus": "OUT_FOR_DELIVERY",
+    "deliveryUpdatedAt": "2026-01-30T13:53:24.045Z",
     "createdAt": "2026-01-30T12:58:23.098Z"
   },
   {
@@ -1637,8 +1637,48 @@
     "deliveryAddress": "",
     "totalEth": "0.0505",
     "status": "PAID_ESCROW",
-    "deliveryStatus": "PENDING",
-    "deliveryUpdatedAt": "2026-01-30T13:01:09.930Z",
+    "deliveryStatus": "OUT_FOR_DELIVERY",
+    "deliveryUpdatedAt": "2026-01-30T13:53:17.443Z",
     "createdAt": "2026-01-30T13:01:09.930Z"
+  },
+  {
+    "orderId": "ORD-PROD-1769781165558",
+    "items": [
+      {
+        "productId": "PRD003",
+        "name": "Smart Phone Case ",
+        "price": 72,
+        "quantity": 1
+      }
+    ],
+    "buyerWallet": "0xd71f8fb9fbbb05be8137e7efd64036d7ac329d6d",
+    "deliveryAddress": "",
+    "totalEth": "0.0360",
+    "status": "RELEASED",
+    "deliveryStatus": "OUT_FOR_DELIVERY",
+    "deliveryUpdatedAt": "2026-01-30T13:53:11.998Z",
+    "createdAt": "2026-01-30T13:52:46.716Z",
+    "appliedPerk": null,
+    "txHash": "0x53423dc2be33791713024699b594f61fe79fa9b688c8a18ea1f915f2f44356f2",
+    "releasedAt": "2026-01-30T13:54:59.391Z"
+  },
+  {
+    "orderId": "ORD-PROD-1769781254953",
+    "items": [
+      {
+        "productId": "PRD003",
+        "name": "Smart Phone Case ",
+        "price": 72,
+        "quantity": 1
+      }
+    ],
+    "buyerWallet": "0xd71f8fb9fbbb05be8137e7efd64036d7ac329d6d",
+    "deliveryAddress": "",
+    "totalEth": "0.0360",
+    "status": "PAID_ESCROW",
+    "deliveryStatus": "PENDING",
+    "deliveryUpdatedAt": "2026-01-30T13:54:16.045Z",
+    "createdAt": "2026-01-30T13:54:16.045Z",
+    "appliedPerk": null
   }
 ]
