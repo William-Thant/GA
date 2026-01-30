@@ -908,11 +908,7 @@
     "createdAt": "2026-01-28T02:44:10.516Z"
   },
   {
-<<<<<<< HEAD
     "orderId": "ORD-CART-1769762400505",
-=======
-    "orderId": "ORD-CART-1769764209122",
->>>>>>> 797a5571470dfe64d2b505ec14ce9e07597042af
     "items": [
       {
         "name": "Smart Phone Case ",
@@ -926,7 +922,6 @@
         "quantity": 1
       },
       {
-<<<<<<< HEAD
         "name": "Controller",
         "description": "Sony PlayStation 5 DualSense Wireless Controller - Midnight Black",
         "price": 93.99,
@@ -1160,8 +1155,6 @@
     "orderId": "ORD-CART-1769769624104",
     "items": [
       {
-=======
->>>>>>> 797a5571470dfe64d2b505ec14ce9e07597042af
         "name": "Samsung Galaxy S25 Ultra",
         "description": "Galaxy S25 Ultra.  ",
         "price": 1708,
@@ -1173,7 +1166,6 @@
         "quantity": 1
       }
     ],
-<<<<<<< HEAD
     "buyerWallet": "0xa295395c6327ec0a1d2c366d994e75b170e4c441",
     "deliveryAddress": "",
     "totalEth": "0.8590",
@@ -1301,49 +1293,116 @@
     "createdAt": "2026-01-30T10:58:23.924Z",
     "txHash": "0x926a1031b2c20919c43b5ba23de6ae1d0b9dca5169782ad67092976ddc9810d7",
     "releasedAt": "2026-01-30T10:58:34.607Z"
-=======
-    "buyerWallet": "0xd71f8fb9fbbb05be8137e7efd64036d7ac329d6d",
-    "deliveryAddress": "",
-    "totalEth": "0.8950",
-    "status": "PAID_ESCROW",
-    "createdAt": "2026-01-30T09:10:17.002Z"
   },
   {
-    "orderId": "ORD-PROD-1769766456799",
+    "orderId": "ORD-CART-1769771522098",
     "items": [
       {
-        "productId": "PRD003",
-        "name": "Smart Phone Case ",
-        "price": 72,
-        "quantity": 1
-      }
-    ],
-    "buyerWallet": "0xd71f8fb9fbbb05be8137e7efd64036d7ac329d6d",
-    "deliveryAddress": "",
-    "totalEth": "0.0360",
-    "status": "PAID_ESCROW",
-    "createdAt": "2026-01-30T09:47:38.632Z"
-  },
-  {
-    "orderId": "ORD-CART-1769766528849",
-    "items": [
-      {
-        "name": "Smart Phone Case ",
-        "description": "Exclusive Essential Case for iPhone 14 Pro Max - Clear Purple",
-        "price": 72,
+        "name": "Controller",
+        "description": "Sony PlayStation 5 DualSense Wireless Controller - Midnight Black",
+        "price": 93.99,
         "stock": 100,
-        "image": "Screenshot 2026-01-16 233922.png",
+        "image": "Screenshot 2026-01-16 233943.png",
         "category": "Accessories",
         "releaseDate": "2020-12-12",
-        "productId": "PRD003",
+        "productId": "PRD004",
         "quantity": 1
       }
     ],
-    "buyerWallet": "0xd71f8fb9fbbb05be8137e7efd64036d7ac329d6d",
+    "buyerWallet": "0xa295395c6327ec0a1d2c366d994e75b170e4c441",
     "deliveryAddress": "",
-    "totalEth": "0.0410",
+    "totalEth": "0.0520",
     "status": "PAID_ESCROW",
-    "createdAt": "2026-01-30T09:48:51.542Z"
->>>>>>> 797a5571470dfe64d2b505ec14ce9e07597042af
+    "createdAt": "2026-01-30T11:12:04.884Z"
+  },
+  {
+    "orderId": "ORD-CART-1769771641614",
+    "items": [
+      {
+        "name": "Controller",
+        "description": "Sony PlayStation 5 DualSense Wireless Controller - Midnight Black",
+        "price": 93.99,
+        "stock": 100,
+        "image": "Screenshot 2026-01-16 233943.png",
+        "category": "Accessories",
+        "releaseDate": "2020-12-12",
+        "productId": "PRD004",
+        "quantity": 2
+      }
+    ],
+    "buyerWallet": "0xa295395c6327ec0a1d2c366d994e75b170e4c441",
+    "deliveryAddress": "",
+    "totalEth": "0.0990",
+    "status": "RELEASED",
+    "createdAt": "2026-01-30T11:14:03.781Z",
+    "txHash": "0x31871a7f83e8c7dbaed78487d6eb1eae2f1ce59c130472aa3cd06c836b39a1ba",
+    "releasedAt": "2026-01-30T11:14:13.930Z"
+  },
+  {
+    "orderId": "ORD-CART-1769771955332",
+    "items": [
+      {
+        "name": "Mouse",
+        "description": "Logitech 910-005790 G203 Lightsync RGB Wired Gaming Mouse, Black",
+        "price": 23.68,
+        "stock": 100,
+        "image": "Screenshot 2026-01-16 233936.png",
+        "category": "Accessories",
+        "releaseDate": "2020-12-12",
+        "productId": "PRD005",
+        "quantity": 1
+      }
+    ],
+    "buyerWallet": "0xa295395c6327ec0a1d2c366d994e75b170e4c441",
+    "deliveryAddress": "",
+    "totalEth": "0.0168",
+    "status": "RELEASED",
+    "createdAt": "2026-01-30T11:19:17.738Z",
+    "txHash": "0x789e3ea33b0c0df0aeacfe7524731fc380c4b4bacdf0cfa8ea6ced3bd01696ad",
+    "releasedAt": "2026-01-30T11:21:01.371Z"
+  },
+  {
+    "orderId": "ORD-CART-1769771955332",
+    "items": [
+      {
+        "name": "Mouse",
+        "description": "Logitech 910-005790 G203 Lightsync RGB Wired Gaming Mouse, Black",
+        "price": 23.68,
+        "stock": 100,
+        "image": "Screenshot 2026-01-16 233936.png",
+        "category": "Accessories",
+        "releaseDate": "2020-12-12",
+        "productId": "PRD005",
+        "quantity": 1
+      }
+    ],
+    "buyerWallet": "0xa295395c6327ec0a1d2c366d994e75b170e4c441",
+    "deliveryAddress": "",
+    "totalEth": "0.0168",
+    "status": "PAID_ESCROW",
+    "createdAt": "2026-01-30T11:20:50.388Z"
+  },
+  {
+    "orderId": "ORD-CART-1769772127563",
+    "items": [
+      {
+        "name": "Mouse",
+        "description": "Logitech 910-005790 G203 Lightsync RGB Wired Gaming Mouse, Black",
+        "price": 23.68,
+        "stock": 100,
+        "image": "Screenshot 2026-01-16 233936.png",
+        "category": "Accessories",
+        "releaseDate": "2020-12-12",
+        "productId": "PRD005",
+        "quantity": 1
+      }
+    ],
+    "buyerWallet": "0xa41762287eb56ad122832ba0648809ab22d572f2",
+    "deliveryAddress": "",
+    "totalEth": "0.0168",
+    "status": "RELEASED",
+    "createdAt": "2026-01-30T11:22:10.277Z",
+    "txHash": "0x972f80f64166a083baa83c0a8ed634a0666b2cbcaedcd18919a40dc4a9bfb189",
+    "releasedAt": "2026-01-30T11:22:19.092Z"
   }
 ]
