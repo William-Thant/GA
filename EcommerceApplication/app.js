@@ -191,6 +191,8 @@ async function fetchProductsFromChain() {
   const total = await contractInfo.methods.getNoOfProducts().call();
   for (let i = 1; i <= total; i++) {
     const info = await contractInfo.methods.getProductInfo(i).call();
+    const price = info.price !== undefined && info.price !== null && info.price !== "" ? Number(info.price) : null;
+    const stock = info.stock !== undefined && info.stock !== null && info.stock !== "" ? Number(info.stock) : null;
     list.push({
       chainIndex: i,
       productId: info.id,
@@ -202,10 +204,10 @@ async function fetchProductsFromChain() {
       },
       catalog: {
         name: info.name,
-        description: info.description,
-        price: Number(info.price),
-        stock: Number(info.stock),
-        image: info.image,
+        description: info.description || null,
+        price: Number.isFinite(price) ? price : null,
+        stock: Number.isFinite(stock) ? stock : null,
+        image: info.image || null,
         category: info.category,
         releaseDate: info.releaseDate
       }
@@ -354,8 +356,19 @@ async function renderProductGallery(res, showCartNav, hideHero = false) {
     const local = await readProducts();
     products = products.map(p => {
       const match = local.find(lp => lp.productId === p.productId);
-      if (match && (!p.catalog.image || p.catalog.image === "null")) {
-        p.catalog.image = match.catalog?.image || match.image || null;
+      if (match) {
+        const localData = normalizeLocalProduct(match);
+        p.productId = p.productId || match.productId;
+        p.productInfo = { ...localData.productInfo, ...(p.productInfo || {}) };
+        p.catalog = { ...localData.catalog, ...(p.catalog || {}) };
+      }
+      if (!p.catalog) p.catalog = {};
+      if (!p.productInfo) p.productInfo = {};
+      if (p.catalog.price !== undefined && p.catalog.price !== null && Number.isNaN(Number(p.catalog.price))) {
+        p.catalog.price = null;
+      }
+      if (p.catalog.stock !== undefined && p.catalog.stock !== null && Number.isNaN(Number(p.catalog.stock))) {
+        p.catalog.stock = null;
       }
       return p;
     });
@@ -444,6 +457,8 @@ app.get('/editProduct/:id', requireAdmin, async (req, res) => {
 
   res.render('editProduct', { acct: account, product, chainIndex });
 });
+// Redirect accidental /editProduct or /editProduct/ to products
+app.get(['/editProduct', '/editProduct/'], requireAdmin, (_req, res) => res.redirect('/products'));
 
 // Edit product (submit)
 app.post('/editProduct/:id', requireAdmin, upload.single('image'), async (req, res) => {

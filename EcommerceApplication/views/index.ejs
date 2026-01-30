@@ -230,18 +230,22 @@
 
                 <% const displayName = catalog.name ? catalog.name : (p.productInfo?.name || "Unnamed"); %>
                 <% const imgFile = catalog.image ? catalog.image : null; %>
-                <% const cardImage = imgFile ? ("/images/" + imgFile) : "/images/ecomme.png"; %>
+                <% const cardImage = imgFile ? ("/images/" + encodeURIComponent(imgFile)) : "/images/ecomme.png"; %>
                 <% const linkId = isJson ? p.productId : p.id; %>
+                <% const priceVal = Number(catalog.price); %>
+                <% const stockVal = Number(catalog.stock); %>
+                <% const priceDisplay = Number.isFinite(priceVal) ? priceVal : 0; %>
+                <% const stockDisplay = Number.isFinite(stockVal) ? stockVal : 0; %>
 
                 <div class="product-box">   
-                        <a href="/product/<%= p.productId %>" class="text-decoration-none">
+                        <a href="/product/<%= linkId %>" class="text-decoration-none">
                         <img src="<%= cardImage %>" alt="<%= displayName %>">
                         <div class="product-name">
                             <h4><%= displayName %></h4>
                             <p class="mb-2 text-muted small"><%= catalog && catalog.description ? catalog.description : 'Product details coming soon.' %></p>
                             <div class="product-meta">
-                                <span class="price-tag">$<%= catalog && catalog.price !== undefined ? catalog.price : '0.00' %></span>
-                                <span class="stock-chip">Stock: <%= catalog && catalog.stock !== undefined ? catalog.stock : 0 %></span>
+                                <span class="price-tag">$<%= priceDisplay %></span>
+                                <span class="stock-chip">Stock: <%= stockDisplay %></span>
                             </div>
                         </div>
                     </a>
@@ -253,7 +257,7 @@
                             </form>
                             <% } %>
                             <% if (user && user.role === 'admin') { %>
-                            <a href="/editProduct/<%= p.productId %>" class="btn btn-sm btn-outline-primary me-2">Edit</a>
+                            <a href="/editProduct/<%= linkId %>" class="btn btn-sm btn-outline-primary me-2">Edit</a>
                             <form action="/deleteProduct/<%= linkId %>" method="POST" style="display: inline;">
                                 <button type="submit" class="btn btn-sm btn-outline-danger delete-btn">Delete</button>
                             </form>
