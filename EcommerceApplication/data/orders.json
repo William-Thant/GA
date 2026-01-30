@@ -906,5 +906,37 @@
     "totalEth": "0.0168",
     "status": "PAID_ESCROW",
     "createdAt": "2026-01-28T02:44:10.516Z"
+  },
+  {
+    "orderId": "ORD-CART-1769764209122",
+    "items": [
+      {
+        "name": "Smart Phone Case ",
+        "description": "Exclusive Essential Case for iPhone 14 Pro Max - Clear Purple",
+        "price": 72,
+        "stock": 100,
+        "image": "Screenshot 2026-01-16 233922.png",
+        "category": "Accessories",
+        "releaseDate": "2020-12-12",
+        "productId": "PRD003",
+        "quantity": 1
+      },
+      {
+        "name": "Samsung Galaxy S25 Ultra",
+        "description": "Galaxy S25 Ultra.  ",
+        "price": 1708,
+        "stock": 80,
+        "image": "1769457963370-907242748-Screenshot 2026-01-27 033220.png",
+        "category": "Smart Phone",
+        "releaseDate": "2025-02-03",
+        "productId": "PRD001",
+        "quantity": 1
+      }
+    ],
+    "buyerWallet": "0xd71f8fb9fbbb05be8137e7efd64036d7ac329d6d",
+    "deliveryAddress": "",
+    "totalEth": "0.8950",
+    "status": "PAID_ESCROW",
+    "createdAt": "2026-01-30T09:10:17.002Z"
   }
 ]
