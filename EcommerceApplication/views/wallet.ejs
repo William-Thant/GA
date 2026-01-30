@@ -26,8 +26,14 @@
             <h1 class="mb-4">Loyalty Wallet</h1>
 
             <div class="balance-card">
-                <h2><%= tokenBalance %> Tokens</h2>
-                <p>Current Balance</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 id="tokenBalanceDisplay"><%= tokenBalance %> Tokens</h2>
+                        <p>Current Balance</p>
+                    </div>
+                    <button class="btn btn-light btn-sm" id="connectWalletBtn">Connect Wallet</button>
+                </div>
+                <div class="mt-2"><small id="walletAddressLabel">Wallet: not connected</small></div>
             </div>
 
             <div class="row mb-4">
@@ -35,7 +41,7 @@
                     <div class="card">
                         <div class="card-body">
                             <h5>Total Earned</h5>
-                            <h3 class="text-success"><%= totalEarned %></h3>
+                            <h3 class="text-success" data-total-earned data-value="<%= totalEarned %>"><%= totalEarned %></h3>
                         </div>
                     </div>
                 </div>
@@ -43,7 +49,7 @@
                     <div class="card">
                         <div class="card-body">
                             <h5>Total Redeemed</h5>
-                            <h3 class="text-danger"><%= totalRedeemed %></h3>
+                            <h3 class="text-danger" id="totalRedeemedDisplay"><%= totalRedeemed %></h3>
                         </div>
                     </div>
                 </div>
@@ -85,15 +91,129 @@
             </table>
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.11.1/dist/ethers.umd.min.js"></script>
     <script>
-        function redeemTokens(name, cost) {
-            if (<%= tokenBalance %> >= cost) {
-                alert(`Redeemed ${name} for ${cost} tokens!`);
-                // In real app, call blockchain function
-            } else {
-                alert('Insufficient tokens!');
+        (function() {
+            const tokenAddress = "<%= loyaltyTokenAddress %>";
+            const tokenOwner = "<%= loyaltyOwner %>";
+            const decimals = Number("<%= loyaltyDecimals %>") || 18;
+            const totalEarned = Number(document.querySelector('[data-total-earned]')?.dataset.value || 0);
+            let totalRedeemed = Number("<%= totalRedeemed %>") || 0;
+
+            const balanceEl = document.getElementById("tokenBalanceDisplay");
+            const redeemedEl = document.getElementById("totalRedeemedDisplay");
+            const connectBtn = document.getElementById("connectWalletBtn");
+            const walletLabel = document.getElementById("walletAddressLabel");
+
+            const ERC20_ABI = [
+                "function balanceOf(address) view returns (uint256)",
+                "function transfer(address to, uint256 amount) returns (bool)",
+                "function decimals() view returns (uint8)"
+            ];
+
+            let currentAccount = null;
+
+            const formatAddr = (addr) => addr ? `${addr.slice(0,6)}...${addr.slice(-4)}` : "not connected";
+
+            async function ensureWallet() {
+                if (!window.ethereum) throw new Error("MetaMask is required for token actions.");
+                const accs = await window.ethereum.request({ method: "eth_requestAccounts" });
+                currentAccount = accs[0];
+                walletLabel.textContent = `Wallet: ${formatAddr(currentAccount)}`;
+                return currentAccount;
             }
-        }
+
+            async function getTokenContract(withSigner = false) {
+                if (!tokenAddress) throw new Error("Loyalty token not deployed/configured.");
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = withSigner ? await provider.getSigner() : null;
+                return new ethers.Contract(tokenAddress, ERC20_ABI, withSigner ? signer : provider);
+            }
+
+            async function refreshBalance() {
+                try {
+                    if (!currentAccount) return;
+                    const contract = await getTokenContract(false);
+                    const raw = await contract.balanceOf(currentAccount);
+                    const human = Number(ethers.formatUnits(raw, decimals));
+                    balanceEl.textContent = `${human} Tokens`;
+                    redeemedEl.textContent = totalRedeemed.toFixed(2).replace(/\\.00$/, '');
+                } catch (err) {
+                    console.warn("Failed to refresh token balance:", err.message || err);
+                }
+            }
+
+            async function refreshRedeemed() {
+                if (!currentAccount) return;
+                try {
+                    const res = await fetch(`/api/wallet/redeemed?wallet=${encodeURIComponent(currentAccount)}`);
+                    const data = await res.json();
+                    totalRedeemed = Number(data.totalRedeemed || 0);
+                    redeemedEl.textContent = totalRedeemed.toFixed(2).replace(/\\.00$/, '');
+                } catch (err) {
+                    console.warn("Failed to load redeemed ledger:", err.message || err);
+                }
+            }
+
+            async function redeemTokens(name, cost) {
+                try {
+                    await ensureWallet();
+                    const contract = await getTokenContract(true);
+                    const costUnits = ethers.parseUnits(String(cost), decimals);
+                    const balance = await contract.balanceOf(currentAccount);
+                    if (balance < costUnits) {
+                        alert("Insufficient tokens!");
+                        return;
+                    }
+                    const recipient = tokenOwner && tokenOwner !== "0x0000000000000000000000000000000000000000"
+                        ? tokenOwner
+                        : currentAccount;
+                    const tx = await contract.transfer(recipient, costUnits);
+                    await tx.wait();
+                    await fetch("/api/wallet/redeemed", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ wallet: currentAccount, amount: cost, offerName: name })
+                    });
+                    await fetch("/api/wallet/claim-perk", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ wallet: currentAccount, offerName: name })
+                    });
+                    totalRedeemed += Number(cost);
+                    alert(`Redeemed ${name} for ${cost} tokens!`);
+                    await refreshRedeemed();
+                    await refreshBalance();
+                } catch (err) {
+                    alert(err.message || "Redeem failed");
+                }
+            }
+
+            window.redeemTokens = redeemTokens;
+            connectBtn?.addEventListener("click", async () => {
+                try { await ensureWallet(); await refreshRedeemed(); await refreshBalance(); } catch (err) { alert(err.message); }
+            });
+
+            if (window.ethereum) {
+                window.ethereum.on("accountsChanged", () => { currentAccount = null; walletLabel.textContent = "Wallet: not connected"; });
+            }
+
+            // On load, try silent account detection (if user already authorized MetaMask)
+            (async () => {
+                if (!window.ethereum) return;
+                try {
+                    const accs = await window.ethereum.request({ method: "eth_accounts" });
+                    if (accs && accs.length) {
+                        currentAccount = accs[0];
+                        walletLabel.textContent = `Wallet: ${formatAddr(currentAccount)}`;
+                        await refreshRedeemed();
+                        await refreshBalance();
+                    }
+                } catch (err) {
+                    console.warn("Silent wallet check failed:", err.message || err);
+                }
+            })();
+        })();
     </script>
 </body>
 </html>
