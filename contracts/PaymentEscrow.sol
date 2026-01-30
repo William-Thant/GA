@@ -101,11 +101,12 @@ contract PaymentEscrow {
         emit OrderCreated(orderHash, orderId, msg.sender, seller, msg.value);
     }
 
-    // Delivery confirmed by staff -> release funds to seller
-    function confirmDelivery(string calldata orderId) external nonReentrant onlyStaff {
+    // Delivery confirmed by staff or buyer -> release funds to seller
+    function confirmDelivery(string calldata orderId) external nonReentrant {
         bytes32 orderHash = _hash(orderId);
         Order storage o = orders[orderHash];
 
+        require(staff[msg.sender] || msg.sender == o.buyer, "Only staff or buyer");
         require(o.status == OrderStatus.FundsLocked, "Not in escrow");
 
         o.status = OrderStatus.Released;

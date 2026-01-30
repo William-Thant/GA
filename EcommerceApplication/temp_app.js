@@ -692,6 +692,35 @@ app.post("/escrow/confirm", async (req, res, next) => {
     if (!orderId) return res.status(400).send("Missing orderId");
 
     await loadBlockchainData();
+    let escrowOrder;
+    try {
+      escrowOrder = await escrowInfo.methods.getOrder(orderId).call();
+    } catch (err) {
+      return res.status(404).send("Order not found on chain");
+    }
+
+    const status = Number(escrowOrder.status ?? escrowOrder[3]);
+    if (status !== 1) {
+      if (status === 2 || status === 3) {
+        try {
+          const orders = await readOrders();
+          const idx = orders.findIndex(o => o.orderId === orderId);
+          if (idx >= 0) {
+            orders[idx].status = status === 2 ? "RELEASED" : "REFUNDED";
+            orders[idx].releasedAt = status === 2 ? new Date().toISOString() : orders[idx].releasedAt;
+            await writeOrders(orders);
+          }
+        } catch (err) {
+          console.warn("Failed to sync orders.json after escrow already finalized:", err.message || err);
+        }
+      }
+
+      const fallback = productId
+        ? `/product/${encodeURIComponent(productId)}`
+        : `/orderDetails?orderId=${encodeURIComponent(orderId)}`;
+      return res.redirect(req.get("referer") || fallback);
+    }
+
     const receipt = await escrowInfo.methods.confirmDelivery(orderId).send({ from: account });
 
     try {

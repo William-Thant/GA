@@ -169,7 +169,7 @@
                     </li>
                 </ul>
                 <div class="d-flex me-lg-3 my-2 my-lg-0">
-                    <input class="form-control nav-search" type="search" placeholder="Search products" aria-label="Search">
+                    <input class="form-control nav-search" id="productSearch" type="search" placeholder="Search products" aria-label="Search">
                 </div>
                 <div class="d-flex align-items-center gap-2">
                     <% if (showCartNav && !(user && user.role === 'admin')) { %>
@@ -295,6 +295,23 @@
                 }, 6000); // 2000 milliseconds = 2 seconds
             }
         };
+    </script>
+    <script>
+        (function () {
+            const input = document.getElementById("productSearch");
+            if (!input) return;
+            const cards = Array.from(document.querySelectorAll(".product-box"));
+            const getText = (card) => (card.innerText || "").toLowerCase();
+            const matches = (text, query) => text.includes(query);
+
+            input.addEventListener("input", () => {
+                const q = input.value.trim().toLowerCase();
+                for (const card of cards) {
+                    const text = getText(card);
+                    card.style.display = matches(text, q) ? "" : "none";
+                }
+            });
+        })();
     </script>
 </body>
 </html>

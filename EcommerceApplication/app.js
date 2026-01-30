@@ -2,13 +2,18 @@ const express = require('express');
 const { Web3 } = require('web3');
 const fs = require("fs");
 const path = require("path");
-const EcommerceContract = require('./build/EcommerceContract.json');
+let EcommerceContract;
+try {
+  EcommerceContract = require('../build/contracts/EcommerceContract.json');
+} catch {
+  EcommerceContract = require('./build/EcommerceContract.json');
+}
 let UserRegistry;
 try {
-  UserRegistry = require('./build/UserRegistry.json');
+  UserRegistry = require('../build/contracts/UserRegistry.json');
 } catch {
   try {
-    UserRegistry = require('../build/contracts/UserRegistry.json');
+    UserRegistry = require('./build/UserRegistry.json');
   } catch {
     UserRegistry = null;
   }
@@ -180,9 +185,9 @@ async function writeOrders(orders) {
 // ===== Load Web3 + Contracts =====
 let PaymentEscrow;
 try {
-  PaymentEscrow = require('./build/PaymentEscrow.json');
-} catch {
   PaymentEscrow = require('../build/contracts/PaymentEscrow.json');
+} catch {
+  PaymentEscrow = require('./build/PaymentEscrow.json');
 }
 
 async function loadWeb3() {
@@ -253,6 +258,35 @@ async function sendWithGas(method, from) {
   }
   const gas = Math.ceil(gasEstimate * 1.3);
   return method.send({ from, gas });
+}
+
+async function syncOrderStatusFromChain(orderId, escrowData, txHash = null) {
+  if (!orderId || !escrowData) return;
+  const statusNum = Number(escrowData.status ?? escrowData[3]);
+  if (!Number.isFinite(statusNum)) return;
+
+  let nextStatus = null;
+  if (statusNum === 1) nextStatus = "PAID_ESCROW";
+  if (statusNum === 2) nextStatus = "RELEASED";
+  if (statusNum === 3) nextStatus = "REFUNDED";
+  if (!nextStatus) return;
+
+  try {
+    const orders = await readOrders();
+    const idx = orders.findIndex(o => o.orderId === orderId);
+    if (idx < 0) return;
+    orders[idx].status = nextStatus;
+    if (nextStatus === "RELEASED") {
+      if (txHash) orders[idx].txHash = orders[idx].txHash || txHash;
+      orders[idx].releasedAt = orders[idx].releasedAt || new Date().toISOString();
+    }
+    if (nextStatus === "REFUNDED") {
+      orders[idx].refundedAt = orders[idx].refundedAt || new Date().toISOString();
+    }
+    await writeOrders(orders);
+  } catch (err) {
+    console.warn("Failed to sync orders.json from on-chain status:", err.message || err);
+  }
 }
 
 async function syncProductsToChain() {
@@ -760,6 +794,26 @@ app.post('/addToCart/:productId', blockAdminCart, (req, res) => {
   });
 });
 
+// Update cart quantity (+1 / -1)
+app.post('/updateCart/:productId', blockAdminCart, (req, res) => {
+  const id = req.params.productId;
+  const delta = Number(req.body.delta || 0);
+  if (!req.session.cart) req.session.cart = [];
+  const item = req.session.cart.find(i => i.productId === id);
+  if (item && Number.isFinite(delta)) {
+    item.quantity = Math.max(1, (Number(item.quantity) || 1) + delta);
+  }
+  res.redirect('/cart');
+});
+
+// Remove item from cart
+app.post('/removeFromCart/:productId', blockAdminCart, (req, res) => {
+  const id = req.params.productId;
+  if (!req.session.cart) req.session.cart = [];
+  req.session.cart = req.session.cart.filter(i => i.productId !== id);
+  res.redirect('/cart');
+});
+
 // Cart
 app.get('/cart', blockAdminCart, async (req, res) => {
   await loadBlockchainData();
@@ -985,6 +1039,7 @@ app.get('/orderDetails', async (req, res) => {
       status: o.status || o[3],
       createdAt: o.createdAt || o[4]
     };
+    await syncOrderStatusFromChain(orderId, escrowData);
   } catch (e) {
     escrowData = { orderId, error: "Order not found on chain" };
   }
@@ -1014,6 +1069,7 @@ app.get("/trackDelivery", async (req, res) => {
       status: Number(o.status ?? o[3]),
       createdAt: o.createdAt || o[4],
     };
+    await syncOrderStatusFromChain(orderId, escrowData);
   } catch (e) {
     escrowData = { orderId, error: "Order not found on chain" };
   }
@@ -1033,6 +1089,29 @@ app.get("/trackDelivery", async (req, res) => {
   res.render("deliveryTracking", { acct: account, escrowData, deliveryStatus });
 });
 
+// Debug: fetch escrow order by id
+app.get("/escrow/order", async (req, res) => {
+  const orderId = req.query.orderId;
+  if (!orderId) return res.status(400).json({ error: "Missing orderId" });
+  try {
+    await loadBlockchainData();
+    const o = await escrowInfo.methods.getOrder(orderId).call();
+    const payload = {
+      orderId,
+      buyer: o.buyer || o[0],
+      seller: o.seller || o[1],
+      amountWei: o.amountWei || o[2],
+      status: o.status || o[3],
+      createdAt: o.createdAt || o[4]
+    };
+    return res.type("application/json").send(
+      JSON.stringify(payload, (_k, v) => (typeof v === "bigint" ? v.toString() : v))
+    );
+  } catch (err) {
+    return res.status(500).json({ error: err.message || String(err) });
+  }
+});
+
 // Confirm delivery -> release escrow funds on-chain
 app.post("/escrow/confirm", async (req, res, next) => {
   try {
@@ -1040,7 +1119,43 @@ app.post("/escrow/confirm", async (req, res, next) => {
     if (!orderId) return res.status(400).send("Missing orderId");
 
     await loadBlockchainData();
-    const receipt = await escrowInfo.methods.confirmDelivery(orderId).send({ from: account });
+    let escrowOrder;
+    try {
+      escrowOrder = await escrowInfo.methods.getOrder(orderId).call();
+    } catch (err) {
+      return res.status(404).send("Order not found on chain");
+    }
+
+    const status = Number(escrowOrder.status ?? escrowOrder[3]);
+    if (status !== 1) {
+      await syncOrderStatusFromChain(orderId, escrowOrder);
+
+      const fallback = productId
+        ? `/product/${encodeURIComponent(productId)}`
+        : `/orderDetails?orderId=${encodeURIComponent(orderId)}`;
+      return res.redirect(req.get("referer") || fallback);
+    }
+
+    let receipt;
+    try {
+      receipt = await sendWithGas(escrowInfo.methods.confirmDelivery(orderId), account);
+    } catch (err) {
+      // If it failed but the status already changed, sync and continue.
+      try {
+        const latest = await escrowInfo.methods.getOrder(orderId).call();
+        const latestStatus = Number(latest.status ?? latest[3]);
+        if (latestStatus !== 1) {
+          await syncOrderStatusFromChain(orderId, latest);
+          const fallback = productId
+            ? `/product/${encodeURIComponent(productId)}`
+            : `/orderDetails?orderId=${encodeURIComponent(orderId)}`;
+          return res.redirect(req.get("referer") || fallback);
+        }
+      } catch (innerErr) {
+        console.warn("Failed to re-check escrow status after confirm error:", innerErr.message || innerErr);
+      }
+      throw err;
+    }
 
     try {
       const orders = await readOrders();
@@ -1062,6 +1177,10 @@ app.post("/escrow/confirm", async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+// Guard: block accidental GET to /escrow/confirm
+app.get("/escrow/confirm", (_req, res) => {
+  res.status(405).send("Use POST to confirm delivery.");
 });
 
 // Basic error handler for async route errors.
