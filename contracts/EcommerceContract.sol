@@ -71,15 +71,16 @@ contract EcommerceContract {
         string email;       
     }
 
-    struct ProductInformation {
+    struct Product {
         string id;
         string name;
-        string category;
+        string description;
+        uint256 price;
+        uint256 stock;
         string releaseDate;
-    }
-
-    struct Product {
-        ProductInformation productInfo;
+        string category;
+        string image;
+        bool exists;
         SupplierWarehouseRecords supplierWarehouseRecords;
         PurchaseAgreement purchaseAgreement;
         WarrantyData warrantyData;
@@ -101,9 +102,22 @@ contract EcommerceContract {
         string memory _id,
         string memory _name,
         string memory _category,
-        string memory _releaseDate
+        string memory _releaseDate,
+        string memory _description,
+        uint256 _price,
+        uint256 _stock,
+        string memory _image
     ) public {
-        products[productId].productInfo = ProductInformation(_id, _name, _category, _releaseDate);
+        require(productId > 0 && productId <= productCount, "Invalid productId");
+        products[productId].id = _id;
+        products[productId].name = _name;
+        products[productId].category = _category;
+        products[productId].releaseDate = _releaseDate;
+        products[productId].description = _description;
+        products[productId].price = _price;
+        products[productId].stock = _stock;
+        products[productId].image = _image;
+        products[productId].exists = true;
     }
 
     // Function to add supplier and warehouse information
@@ -184,8 +198,19 @@ contract EcommerceContract {
     }
 
      // Function to retrieve product information
-    function getProductInfo(uint256 productId) public view returns (ProductInformation memory) {
-        return products[productId].productInfo;
+    function getProductInfo(uint256 productId) public view returns (
+        string memory id,
+        string memory name,
+        string memory category,
+        string memory releaseDate,
+        string memory description,
+        uint256 price,
+        uint256 stock,
+        string memory image,
+        bool exists
+    ) {
+        Product storage p = products[productId];
+        return (p.id, p.name, p.category, p.releaseDate, p.description, p.price, p.stock, p.image, p.exists);
     }
 
      // Function to retrieve supplier warehouse information

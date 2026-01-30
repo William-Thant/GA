@@ -1,0 +1,8 @@
+{
+  "watch": ["EcommerceApplication"],
+  "ignore": [
+    "EcommerceApplication/data/*.json",
+    "EcommerceApplication/public/images/**",
+    "EcommerceApplication/build/**"
+  ]
+}

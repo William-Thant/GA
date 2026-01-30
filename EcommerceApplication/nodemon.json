@@ -1,0 +1,8 @@
+{
+  "watch": ["."],
+  "ignore": [
+    "data/*.json",
+    "public/images/**",
+    "build/**"
+  ]
+}

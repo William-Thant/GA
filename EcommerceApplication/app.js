@@ -81,6 +81,51 @@ async function writeProducts(products) {
   await fs.promises.mkdir(path.dirname(productsDataPath), { recursive: true });
   await fs.promises.writeFile(productsDataPath, JSON.stringify(products, null, 2));
 }
+async function getLocalProductImage(productId) {
+  if (!productId) return null;
+  const products = await readProducts();
+  const match = products.find(p => p.productId === productId);
+  if (!match) return null;
+  return match.catalog?.image || match.image || null;
+}
+function normalizeLocalProduct(local) {
+  if (!local) return { catalog: {}, productInfo: {} };
+  const catalog = local.catalog ? { ...local.catalog } : {
+    name: local.name,
+    description: local.description,
+    price: local.price,
+    stock: local.stock,
+    image: local.image,
+    category: local.category,
+    releaseDate: local.releaseDate
+  };
+  const productInfo = local.productInfo ? { ...local.productInfo } : {
+    id: local.productId,
+    name: catalog.name,
+    category: catalog.category,
+    releaseDate: catalog.releaseDate
+  };
+  return { catalog, productInfo };
+}
+function normalizeChainProduct(chain) {
+  if (!chain) return { catalog: {}, productInfo: {} };
+  const catalog = chain.catalog ? { ...chain.catalog } : {
+    name: chain.name,
+    description: chain.description,
+    price: chain.price,
+    stock: chain.stock,
+    image: chain.image,
+    category: chain.category,
+    releaseDate: chain.releaseDate
+  };
+  const productInfo = chain.productInfo ? { ...chain.productInfo } : {
+    id: chain.productId || chain.id,
+    name: catalog.name,
+    category: catalog.category,
+    releaseDate: catalog.releaseDate
+  };
+  return { catalog, productInfo };
+}
 
 /* ===== Helpers for Users JSON ===== */
 async function ensureUsersFile() {
@@ -184,6 +229,127 @@ async function loadBlockchainData() {
   }
 }
 
+function isEmptyValue(value) {
+  return value === undefined || value === null || value === "";
+}
+function isDifferentCatalog(localData, chainData) {
+  const l = localData.catalog || {};
+  const c = chainData.catalog || {};
+  return (
+    (l.name || "") !== (c.name || "") ||
+    (l.category || "") !== (c.category || "") ||
+    (l.releaseDate || "") !== (c.releaseDate || "") ||
+    (l.description || "") !== (c.description || "") ||
+    Number(l.price || 0) !== Number(c.price || 0) ||
+    Number(l.stock || 0) !== Number(c.stock || 0) ||
+    (l.image || "") !== (c.image || "")
+  );
+}
+async function sendWithGas(method, from) {
+  const gasEstimate = await method.estimateGas({ from });
+  if (typeof gasEstimate === "bigint") {
+    const gas = gasEstimate + (gasEstimate / 3n);
+    return method.send({ from, gas });
+  }
+  const gas = Math.ceil(gasEstimate * 1.3);
+  return method.send({ from, gas });
+}
+
+async function syncProductsToChain() {
+  if (!contractInfo) return;
+  const local = await readProducts();
+  const onchain = await fetchProductsFromChain();
+  const chainById = new Map(onchain.map(p => [p.productId, p]));
+  let changed = false;
+
+  // Pull chain -> local (fill missing and add new chain-only products)
+  for (const cp of onchain) {
+    if (!cp.productId) continue;
+    const localIdx = local.findIndex(p => p.productId === cp.productId);
+    const chainData = normalizeChainProduct(cp);
+    if (localIdx === -1) {
+      local.push({
+        productId: cp.productId,
+        catalog: chainData.catalog,
+        productInfo: chainData.productInfo,
+        onChainId: cp.chainIndex
+      });
+      changed = true;
+      continue;
+    }
+    const lp = local[localIdx];
+    const localData = normalizeLocalProduct(lp);
+    const mergedCatalog = { ...localData.catalog };
+    for (const key of Object.keys(chainData.catalog || {})) {
+      if (isEmptyValue(mergedCatalog[key]) && !isEmptyValue(chainData.catalog[key])) {
+        mergedCatalog[key] = chainData.catalog[key];
+      }
+    }
+    const mergedInfo = { ...localData.productInfo };
+    for (const key of Object.keys(chainData.productInfo || {})) {
+      if (isEmptyValue(mergedInfo[key]) && !isEmptyValue(chainData.productInfo[key])) {
+        mergedInfo[key] = chainData.productInfo[key];
+      }
+    }
+    local[localIdx] = {
+      ...lp,
+      productId: lp.productId || cp.productId,
+      catalog: mergedCatalog,
+      productInfo: mergedInfo,
+      onChainId: cp.chainIndex || lp.onChainId
+    };
+    changed = true;
+  }
+
+  if (changed) await writeProducts(local);
+
+  for (const lp of local) {
+    if (!lp.productId) continue;
+    const data = normalizeLocalProduct(lp);
+    const name = data.productInfo.name || data.catalog.name || "";
+    const category = data.productInfo.category || data.catalog.category || "";
+    const releaseDate = data.productInfo.releaseDate || data.catalog.releaseDate || "";
+    if (!name) continue;
+    const existing = chainById.get(lp.productId);
+    if (!existing) {
+      await sendWithGas(contractInfo.methods.registerProduct(), account);
+      const newIndex = await contractInfo.methods.getNoOfProducts().call();
+      await sendWithGas(contractInfo.methods.addProductInfo(
+        newIndex,
+        lp.productId,
+        name,
+        category,
+        releaseDate,
+        data.catalog.description || "",
+        Math.round(Number(data.catalog.price) * 100) || 0,
+        Number(data.catalog.stock) || 0,
+        data.catalog.image || ""
+      ), account);
+      lp.onChainId = Number(newIndex);
+      changed = true;
+      continue;
+    }
+
+    const chainData = normalizeChainProduct(existing);
+    if (isDifferentCatalog(data, chainData)) {
+      await sendWithGas(contractInfo.methods.addProductInfo(
+        existing.chainIndex,
+        lp.productId,
+        name,
+        category,
+        releaseDate,
+        data.catalog.description || "",
+        Math.round(Number(data.catalog.price) * 100) || 0,
+        Number(data.catalog.stock) || 0,
+        data.catalog.image || ""
+      ), account);
+      changed = true;
+    }
+  }
+
+  if (changed) await writeProducts(local);
+}
+
 /* ================= ROUTES ================= */
 
 async function fetchProductsFromChain() {
@@ -191,7 +357,9 @@ async function fetchProductsFromChain() {
   const total = await contractInfo.methods.getNoOfProducts().call();
   for (let i = 1; i <= total; i++) {
     const info = await contractInfo.methods.getProductInfo(i).call();
-    const price = info.price !== undefined && info.price !== null && info.price !== "" ? Number(info.price) : null;
+    const price = info.price !== undefined && info.price !== null && info.price !== ""
+      ? Number(info.price) / 100
+      : null;
     const stock = info.stock !== undefined && info.stock !== null && info.stock !== "" ? Number(info.stock) : null;
     list.push({
       chainIndex: i,
@@ -352,10 +520,14 @@ app.post('/admin/requests/:idx/reject', requireAdmin, async (req, res) => {
 async function renderProductGallery(res, showCartNav, hideHero = false) {
   let products = [];
   try {
-    products = await fetchProductsFromChain();
+    const chain = await fetchProductsFromChain();
     const local = await readProducts();
-    products = products.map(p => {
-      const match = local.find(lp => lp.productId === p.productId);
+    const localById = new Map(local.map(p => [p.productId, p]));
+    const merged = [];
+
+    for (const p of chain) {
+      if (!p.productId) continue;
+      const match = localById.get(p.productId);
       if (match) {
         const localData = normalizeLocalProduct(match);
         p.productId = p.productId || match.productId;
@@ -370,11 +542,32 @@ async function renderProductGallery(res, showCartNav, hideHero = false) {
       if (p.catalog.stock !== undefined && p.catalog.stock !== null && Number.isNaN(Number(p.catalog.stock))) {
         p.catalog.stock = null;
       }
-      return p;
-    });
+      merged.push(p);
+    }
+
+    for (const lp of local) {
+      if (!lp.productId) continue;
+      if (merged.some(p => p.productId === lp.productId)) continue;
+      const localData = normalizeLocalProduct(lp);
+      merged.push({
+        productId: lp.productId,
+        productInfo: localData.productInfo,
+        catalog: localData.catalog
+      });
+    }
+
+    products = merged;
   } catch (err) {
     console.error("Failed to load products on-chain, fallback to local:", err.message);
-    products = await readProducts();
+    const local = await readProducts();
+    products = local.map(lp => {
+      const localData = normalizeLocalProduct(lp);
+      return {
+        productId: lp.productId,
+        productInfo: localData.productInfo,
+        catalog: localData.catalog
+      };
+    });
   }
   const cnt = products.length;
   res.render('index', {
@@ -411,7 +604,29 @@ app.get('/product/:id', async (req, res) => {
     const local = await readProducts();
     product = local.find(p => p.productId === req.params.id);
   }
+  if (!product) {
+    const local = await readProducts();
+    product = local.find(p => p.productId === req.params.id);
+  }
   if (!product) return res.status(404).send("Not found");
+  const locals = await readProducts();
+  const localMatch = locals.find(p => p.productId === (product.productId || product.id));
+  if (localMatch) {
+    const localData = normalizeLocalProduct(localMatch);
+    product.productId = product.productId || localMatch.productId;
+    product.productInfo = { ...localData.productInfo, ...(product.productInfo || {}) };
+    product.catalog = { ...localData.catalog, ...(product.catalog || {}) };
+  } else {
+    const localData = normalizeLocalProduct(product);
+    product.productInfo = { ...localData.productInfo, ...(product.productInfo || {}) };
+    product.catalog = { ...localData.catalog, ...(product.catalog || {}) };
+  }
+  if (!product.catalog) product.catalog = {};
+  if (!product.productInfo) product.productInfo = {};
+  if (!product.catalog.image) {
+    const localImage = await getLocalProductImage(product.productId || product.id);
+    if (localImage) product.catalog.image = localImage;
+  }
 
   res.render('productDetail', {
     acct: account,
@@ -454,6 +669,14 @@ app.get('/editProduct/:id', requireAdmin, async (req, res) => {
   }
 
   if (!product) return res.status(404).send("Product not found");
+  if (!product.catalog || !product.productInfo) {
+    const localData = normalizeLocalProduct(product);
+    product = {
+      ...product,
+      catalog: { ...localData.catalog, ...(product.catalog || {}) },
+      productInfo: { ...localData.productInfo, ...(product.productInfo || {}) }
+    };
+  }
 
   res.render('editProduct', { acct: account, product, chainIndex });
 });
@@ -496,7 +719,17 @@ app.post('/editProduct/:id', requireAdmin, upload.single('image'), async (req, r
   const chainNum = Number(chainIndex);
   if (!Number.isNaN(chainNum) && chainNum > 0 && contractInfo) {
     try {
-      await contractInfo.methods.addProductInfo(chainNum, id, name, category, releaseDate).send({ from: account, gas: 600000 });
+      await sendWithGas(contractInfo.methods.addProductInfo(
+        chainNum,
+        id,
+        name,
+        category,
+        releaseDate,
+        description,
+        Math.round(Number(price) * 100) || 0,
+        Number(stock) || 0,
+        newImage
+      ), account);
     } catch (err) {
       console.warn("On-chain edit failed (continuing with local changes):", err.message || err);
     }
@@ -616,19 +849,19 @@ app.post('/addProduct', requireAdmin, upload.single('image'), async (req, res) =
     const onchainId = productId && productId.trim().length ? productId : `PRD-${Date.now()}`;
 
     // On-chain registration: numeric index then info with full fields
-    await contractInfo.methods.registerProduct().send({ from: account, gas: 500000 });
+    await sendWithGas(contractInfo.methods.registerProduct(), account);
     const newIndex = await contractInfo.methods.getNoOfProducts().call();
-    await contractInfo.methods.addProductInfo(
+    await sendWithGas(contractInfo.methods.addProductInfo(
       newIndex,
       onchainId,
       name,
       category,
       releaseDate,
       description,
-      price,
+      Math.round(Number(price) * 100) || 0,
       stock,
       fileName
-    ).send({ from: account, gas: 700000 });
+    ), account);
 
     // Update local metadata mirror (for quick reads / images)
     const products = await readProducts();
@@ -842,6 +1075,7 @@ app.use((err, req, res, next) => {
   try {
     await loadWeb3();
     await loadBlockchainData();
+    await syncProductsToChain();
   } catch (err) {
     console.error(err.message || err);
   }

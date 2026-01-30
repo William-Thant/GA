@@ -7,7 +7,23 @@
     "stock": 100,
     "releaseDate": "2020-12-12",
     "category": "Accessories",
-    "image": "Screenshot 2026-01-16 233907.png"
+    "image": "Screenshot 2026-01-16 233907.png",
+    "onChainId": 1,
+    "catalog": {
+      "name": "Amazon Kindle",
+      "description": "Paperwhite (16 GB) â€“ Our fastest Kindle ever, with new 7\" glare-free display, and weeks of battery life â€“ Black (International Version",
+      "price": 274.41,
+      "stock": 100,
+      "image": "Screenshot 2026-01-16 233907.png",
+      "category": "Accessories",
+      "releaseDate": "2020-12-12"
+    },
+    "productInfo": {
+      "id": "PRD002",
+      "name": "Amazon Kindle",
+      "category": "Accessories",
+      "releaseDate": "2020-12-12"
+    }
   },
   {
     "productId": "PRD003",
@@ -17,7 +33,23 @@
     "stock": 100,
     "releaseDate": "2020-12-12",
     "category": "Accessories",
-    "image": "Screenshot 2026-01-16 233922.png"
+    "image": "Screenshot 2026-01-16 233922.png",
+    "onChainId": 2,
+    "catalog": {
+      "name": "Smart Phone Case ",
+      "description": "Exclusive Essential Case for iPhone 14 Pro Max - Clear Purple",
+      "price": 72,
+      "stock": 100,
+      "image": "Screenshot 2026-01-16 233922.png",
+      "category": "Accessories",
+      "releaseDate": "2020-12-12"
+    },
+    "productInfo": {
+      "id": "PRD003",
+      "name": "Smart Phone Case ",
+      "category": "Accessories",
+      "releaseDate": "2020-12-12"
+    }
   },
   {
     "productId": "PRD004",
@@ -27,7 +59,23 @@
     "stock": 100,
     "releaseDate": "2020-12-12",
     "category": "Accessories",
-    "image": "Screenshot 2026-01-16 233943.png"
+    "image": "Screenshot 2026-01-16 233943.png",
+    "onChainId": 3,
+    "catalog": {
+      "name": "Controller",
+      "description": "Sony PlayStation 5 DualSense Wireless Controller - Midnight Black",
+      "price": 93.99,
+      "stock": 100,
+      "image": "Screenshot 2026-01-16 233943.png",
+      "category": "Accessories",
+      "releaseDate": "2020-12-12"
+    },
+    "productInfo": {
+      "id": "PRD004",
+      "name": "Controller",
+      "category": "Accessories",
+      "releaseDate": "2020-12-12"
+    }
   },
   {
     "productId": "PRD005",
@@ -37,7 +85,23 @@
     "stock": 100,
     "releaseDate": "2020-12-12",
     "category": "Accessories",
-    "image": "Screenshot 2026-01-16 233936.png"
+    "image": "Screenshot 2026-01-16 233936.png",
+    "onChainId": 4,
+    "catalog": {
+      "name": "Mouse",
+      "description": "Logitech 910-005790 G203 Lightsync RGB Wired Gaming Mouse, Black",
+      "price": 23.68,
+      "stock": 100,
+      "image": "Screenshot 2026-01-16 233936.png",
+      "category": "Accessories",
+      "releaseDate": "2020-12-12"
+    },
+    "productInfo": {
+      "id": "PRD005",
+      "name": "Mouse",
+      "category": "Accessories",
+      "releaseDate": "2020-12-12"
+    }
   },
   {
     "productId": "PRD006",
@@ -47,7 +111,23 @@
     "stock": 100,
     "releaseDate": "2020-12-12",
     "category": "Accessories",
-    "image": "Screenshot 2026-01-16 233930.png"
+    "image": "Screenshot 2026-01-16 233930.png",
+    "onChainId": 5,
+    "catalog": {
+      "name": "Headset",
+      "description": "Acer Predator Galea 311 True Harmony Sound Gaming Headset: 50mm Drivers ",
+      "price": 93.99,
+      "stock": 100,
+      "image": "Screenshot 2026-01-16 233930.png",
+      "category": "Accessories",
+      "releaseDate": "2020-12-12"
+    },
+    "productInfo": {
+      "id": "PRD006",
+      "name": "Headset",
+      "category": "Accessories",
+      "releaseDate": "2020-12-12"
+    }
   },
   {
     "productId": "PRD001",
@@ -65,7 +145,8 @@
       "name": "Samsung Galaxy S25 Ultra",
       "category": "Smart Phone",
       "releaseDate": "2025-02-03"
-    }
+    },
+    "onChainId": 6
   },
   {
     "productId": "PRD007",
@@ -84,6 +165,6 @@
       "category": "Accessories",
       "releaseDate": "2020-01-27"
     },
-    "onChainId": 5
+    "onChainId": 7
   }
 ]
