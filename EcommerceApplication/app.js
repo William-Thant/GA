@@ -18,16 +18,6 @@ try {
     UserRegistry = null;
   }
 }
-let LoyaltyToken;
-try {
-  LoyaltyToken = require('../build/contracts/LoyaltyToken.json');
-} catch {
-  try {
-    LoyaltyToken = require('./build/LoyaltyToken.json');
-  } catch {
-    LoyaltyToken = null;
-  }
-}
 const multer = require('multer');
 const session = require('express-session');
 const crypto = require('crypto');
@@ -71,15 +61,11 @@ let listOfProductsSC = [];
 let contractInfo;
 let escrowInfo;
 let userRegistry;
-let loyaltyToken;
-let loyaltyOwner = '';
-let loyaltyDecimals = 18;
 
 const productsDataPath = path.join(__dirname, "data", "products.json");
 const ordersDataPath = path.join(__dirname, "data", "orders.json");
 const usersDataPath = path.join(__dirname, "data", "users.json");
 const adminReqPath = path.join(__dirname, "data", "adminRequests.json");
-const redeemedDataPath = path.join(__dirname, "data", "redeemed.json");
 
 // In-memory map for per-tab user state (tabId -> user object)
 const tabUsers = new Map();
@@ -199,47 +185,6 @@ async function writeOrders(orders) {
   await fs.promises.writeFile(ordersDataPath, JSON.stringify(orders, null, 2));
 }
 
-// ===== Helpers for Redeemed tokens ledger (off-chain tracking of redemptions) =====
-async function ensureRedeemedFile() {
-  try { await fs.promises.access(redeemedDataPath); }
-  catch {
-    await fs.promises.mkdir(path.dirname(redeemedDataPath), { recursive: true });
-    await fs.promises.writeFile(redeemedDataPath, JSON.stringify({}, null, 2));
-  }
-}
-async function readRedeemed() {
-  await ensureRedeemedFile();
-  return JSON.parse(await fs.promises.readFile(redeemedDataPath, "utf8"));
-}
-async function writeRedeemed(map) {
-  await fs.promises.mkdir(path.dirname(redeemedDataPath), { recursive: true });
-  await fs.promises.writeFile(redeemedDataPath, JSON.stringify(map, null, 2));
-}
-
-function normalizeRedeemedMap(map) {
-  // backwards compatibility: wallet: number -> { total: n, perks: [] }
-  const normalized = {};
-  for (const [k, v] of Object.entries(map || {})) {
-    if (typeof v === "number") {
-      normalized[k] = { total: v, perks: [] };
-    } else if (v && typeof v === "object") {
-      normalized[k] = {
-        total: Number(v.total || 0),
-        perks: Array.isArray(v.perks) ? v.perks : []
-      };
-    }
-  }
-  return normalized;
-}
-
-function perkFromName(name) {
-  const key = (name || "").toLowerCase();
-  if (key.includes("5%")) return { name: "5% off next order", type: "percent", value: 5 };
-  if (key.includes("free shipping")) return { name: "Free shipping", type: "shipping", value: 10 };
-  if (key.includes("voucher") || key.includes("$10")) return { name: "$10 voucher", type: "voucher", value: 10 };
-  return null;
-}
-
 // ===== Load Web3 + Contracts =====
 let PaymentEscrow;
 try {
@@ -284,19 +229,6 @@ async function loadBlockchainData() {
     throw new Error(`PaymentEscrow not deployed on network ${networkId}. Run truffle migrate on the correct network.`);
   }
   escrowInfo = new web3.eth.Contract(PaymentEscrow.abi, escrowNetwork.address);
-
-  if (LoyaltyToken && LoyaltyToken.networks && LoyaltyToken.networks[networkId]) {
-    loyaltyToken = new web3.eth.Contract(LoyaltyToken.abi, LoyaltyToken.networks[networkId].address);
-    try {
-      loyaltyOwner = await loyaltyToken.methods.owner().call();
-      const dec = await loyaltyToken.methods.decimals().call();
-      loyaltyDecimals = Number(dec) || 18;
-    } catch (err) {
-      loyaltyOwner = account;
-      loyaltyDecimals = 18;
-      console.warn("Failed to fetch loyalty token metadata:", err.message || err);
-    }
-  }
 
   if (UserRegistry && UserRegistry.networks && UserRegistry.networks[networkId]) {
     userRegistry = new web3.eth.Contract(UserRegistry.abi, UserRegistry.networks[networkId].address);
@@ -910,23 +842,8 @@ app.get('/cart', blockAdminCart, async (req, res) => {
 
   const cartItems = req.session.cart || [];
   const subtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
-  let shippingFee = 10;
-  let discount = 0;
-  let perkNote = null;
-  const perk = req.session.redeemPerk;
-  if (perk) {
-    if (perk.type === "percent") {
-      discount = (subtotal * perk.value) / 100;
-      perkNote = `${perk.value}% off applied`;
-    } else if (perk.type === "shipping") {
-      discount = Math.min(shippingFee, perk.value);
-      perkNote = `Free shipping applied`;
-    } else if (perk.type === "voucher") {
-      discount = Math.min(subtotal + shippingFee, perk.value);
-      perkNote = `$${perk.value} voucher applied`;
-    }
-  }
-  const total = Math.max(0, subtotal + shippingFee - discount);
+  const shippingFee = 10;
+  const total = subtotal + shippingFee;
 
   // Loyalty logic 
   const expectedTokens = Math.floor(total / 10); // e.g. 1 token per $10 spent
@@ -936,8 +853,6 @@ app.get('/cart', blockAdminCart, async (req, res) => {
     cartItems,
     subtotal,
     shippingFee,
-    discount,
-    perkNote,
     total,
     expectedTokens   
   });
@@ -945,8 +860,6 @@ app.get('/cart', blockAdminCart, async (req, res) => {
 
 // Wallet & rewards
 app.get('/wallet', async (req, res) => {
-  await loadBlockchainData();
-
   const orders = await readOrders();
   const releasedOrders = orders.filter(o => o.status === "RELEASED");
   const totalSpent = releasedOrders.reduce((sum, o) => {
@@ -983,75 +896,13 @@ app.get('/wallet', async (req, res) => {
     { name: "$10 voucher", cost: 40 }
   ];
 
-  let rewardRate = null;
-  try {
-    rewardRate = await escrowInfo.methods.rewardRate().call();
-  } catch {
-    rewardRate = null;
-  }
-
-  const redeemedMap = normalizeRedeemedMap(await readRedeemed());
-  const sessionWallet = normalizeAddress(req.session.buyerWallet);
-  const sessionPerk = req.session.redeemPerk || null;
-  const walletRedeemed = sessionWallet ? Number(redeemedMap[sessionWallet]?.total || 0) : 0;
-
   res.render('wallet', {
     tokenBalance,
     totalEarned,
-    totalRedeemed: walletRedeemed,
+    totalRedeemed,
     redeemOptions,
-    transactionHistory,
-    loyaltyTokenAddress: loyaltyToken?.options?.address || '',
-    loyaltyOwner,
-    loyaltyDecimals,
-    rewardRate,
-    activePerk: sessionPerk
+    transactionHistory
   });
-});
-
-// Redeemed ledger endpoints
-app.get('/api/wallet/redeemed', async (req, res) => {
-  const wallet = normalizeAddress(req.query.wallet);
-  if (!wallet) return res.json({ totalRedeemed: 0 });
-  try {
-    const map = normalizeRedeemedMap(await readRedeemed());
-    return res.json({ totalRedeemed: Number(map[wallet]?.total || 0), perks: map[wallet]?.perks || [] });
-  } catch (err) {
-    console.error("Failed to read redeemed ledger:", err);
-    return res.status(500).json({ error: "Failed to read redeemed ledger" });
-  }
-});
-
-app.post('/api/wallet/redeemed', async (req, res) => {
-  const wallet = normalizeAddress(req.body.wallet);
-  const amount = Number(req.body.amount || 0);
-  const offerName = req.body.offerName || "";
-  if (!wallet) return res.status(400).json({ error: "Wallet required" });
-  if (!(amount > 0)) return res.status(400).json({ error: "Positive amount required" });
-  try {
-    const map = normalizeRedeemedMap(await readRedeemed());
-    const perk = perkFromName(offerName);
-    if (!map[wallet]) map[wallet] = { total: 0, perks: [] };
-    map[wallet].total = Number(map[wallet].total || 0) + amount;
-    if (perk) {
-      map[wallet].perks.push({ ...perk, used: false, createdAt: Date.now() });
-    }
-    await writeRedeemed(map);
-    return res.json({ totalRedeemed: map[wallet].total, perks: map[wallet].perks });
-  } catch (err) {
-    console.error("Failed to update redeemed ledger:", err);
-    return res.status(500).json({ error: "Failed to update redeemed ledger" });
-  }
-});
-
-// Claim perk into session (used to apply on checkout)
-app.post('/api/wallet/claim-perk', (req, res) => {
-  const wallet = normalizeAddress(req.body.wallet);
-  const offerName = req.body.offerName;
-  const perk = perkFromName(offerName);
-  if (!wallet || !perk) return res.status(400).json({ error: "Wallet and valid offer required" });
-  req.session.redeemPerk = { ...perk, wallet };
-  return res.json({ perk: req.session.redeemPerk });
 });
 
 // About
@@ -1149,24 +1000,8 @@ app.get('/checkout', blockAdminCart, async (req, res) => {
   if (!cartItems.length) return res.redirect('/cart');
 
   const subtotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
-  let shippingFee = 10;
-  let discount = 0;
-  let perkNote = null;
-  const perk = req.session.redeemPerk;
-  if (perk) {
-    if (perk.type === "percent") {
-      discount = (subtotal * perk.value) / 100;
-      perkNote = `${perk.value}% off applied`;
-    } else if (perk.type === "shipping") {
-      discount = Math.min(shippingFee, perk.value);
-      perkNote = `Free shipping applied`;
-    } else if (perk.type === "voucher") {
-      discount = Math.min(subtotal + shippingFee, perk.value);
-      perkNote = `$${perk.value} voucher applied`;
-    }
-  }
-
-  const total = Math.max(0, subtotal + shippingFee - discount);
+  const shippingFee = 10;
+  const total = subtotal + shippingFee;
   const orderId = `ORD-CART-${Date.now()}`;
 
   res.render('checkout', {
@@ -1174,8 +1009,6 @@ app.get('/checkout', blockAdminCart, async (req, res) => {
     cartItems,
     subtotal,
     shippingFee,
-    discount,
-    perkNote,
     total,
     orderId,
     contractAddress: escrowInfo.options.address,
@@ -1188,8 +1021,6 @@ app.post('/orders', async (req, res) => {
   try {
     const { orderId, items, buyerWallet, deliveryAddress, totalEth } = req.body;
     const finalId = orderId || `ORD-${Date.now()}`;
-    const perk = req.session.redeemPerk || null;
-    req.session.redeemPerk = null;
 
     const record = {
       orderId: finalId,
@@ -1200,8 +1031,7 @@ app.post('/orders', async (req, res) => {
       status: "PAID_ESCROW",
       deliveryStatus: "PENDING",
       deliveryUpdatedAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      appliedPerk: perk
+      createdAt: new Date().toISOString()
     };
 
     const orders = await readOrders();

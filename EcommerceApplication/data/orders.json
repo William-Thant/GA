@@ -1517,8 +1517,8 @@
     "deliveryAddress": "",
     "totalEth": "0.0520",
     "status": "PAID_ESCROW",
-    "deliveryStatus": "OUT_FOR_DELIVERY",
-    "deliveryUpdatedAt": "2026-01-30T12:57:38.881Z",
+    "deliveryStatus": "PENDING",
+    "deliveryUpdatedAt": "2026-01-30T12:02:51.428Z",
     "createdAt": "2026-01-30T12:02:51.428Z"
   },
   {
@@ -1547,138 +1547,28 @@
     "releasedAt": "2026-01-30T12:16:29.122Z"
   },
   {
-    "orderId": "ORD-CART-1769775902328",
+    "orderId": "ORD-CART-1769779205424",
     "items": [
       {
-        "productId": "PRD004",
-        "name": "Controller",
-        "description": "Sony PlayStation 5 DualSense Wireless Controller - Midnight Black",
-        "price": 93.99,
+        "name": "Smart Phone Case ",
+        "description": "Exclusive Essential Case for iPhone 14 Pro Max - Clear Purple",
+        "price": 72,
         "stock": 100,
-        "releaseDate": "2020-12-12",
+        "image": "Screenshot 2026-01-16 233922.png",
         "category": "Accessories",
-        "image": "Screenshot 2026-01-16 233943.png",
-        "onChainId": 3,
-        "catalog": {
-          "name": "Controller",
-          "description": "Sony PlayStation 5 DualSense Wireless Controller - Midnight Black",
-          "price": 93.99,
-          "stock": 100,
-          "image": "Screenshot 2026-01-16 233943.png",
-          "category": "Accessories",
-          "releaseDate": "2020-12-12"
-        },
-        "productInfo": {
-          "id": "PRD004",
-          "name": "Controller",
-          "category": "Accessories",
-          "releaseDate": "2020-12-12"
-        },
-        "quantity": 1
-      }
-    ],
-    "buyerWallet": "0xd71f8fb9fbbb05be8137e7efd64036d7ac329d6d",
-    "deliveryAddress": "",
-    "totalEth": "0.0520",
-    "status": "PAID_ESCROW",
-    "deliveryStatus": "OUT_FOR_DELIVERY",
-    "deliveryUpdatedAt": "2026-01-30T12:57:28.693Z",
-    "createdAt": "2026-01-30T12:25:04.274Z"
-  },
-  {
-    "orderId": "ORD-PROD-1769776266012",
-    "items": [
-      {
+        "releaseDate": "2020-12-12",
         "productId": "PRD003",
-        "name": "Smart Phone Case ",
-        "price": 72,
         "quantity": 1
       }
     ],
-    "buyerWallet": "0xd71f8fb9fbbb05be8137e7efd64036d7ac329d6d",
+    "buyerWallet": "0x7a3465141e3df41c56852048fa1e6da988433263",
     "deliveryAddress": "",
-    "totalEth": "0.0360",
+    "totalEth": "0.0410",
     "status": "RELEASED",
     "deliveryStatus": "OUT_FOR_DELIVERY",
-    "deliveryUpdatedAt": "2026-01-30T12:57:31.966Z",
-    "createdAt": "2026-01-30T12:31:07.999Z",
-    "txHash": "0x41423e7504d432121295f9742431b75da04241afc9709570bc9e90261a94e9ec",
-    "releasedAt": "2026-01-30T12:58:57.501Z"
-  },
-  {
-    "orderId": "ORD-PROD-1769777901315",
-    "items": [
-      {
-        "productId": "PRD001",
-        "name": "Samsung Galaxy S25 Ultra",
-        "price": 1708,
-        "quantity": 1
-      }
-    ],
-    "buyerWallet": "0xd71f8fb9fbbb05be8137e7efd64036d7ac329d6d",
-    "deliveryAddress": "",
-    "totalEth": "0.8540",
-    "status": "PAID_ESCROW",
-    "deliveryStatus": "OUT_FOR_DELIVERY",
-    "deliveryUpdatedAt": "2026-01-30T13:53:24.045Z",
-    "createdAt": "2026-01-30T12:58:23.098Z"
-  },
-  {
-    "orderId": "ORD-PROD-1769778068203",
-    "items": [
-      {
-        "productId": "PRD006",
-        "name": "Headset",
-        "price": 100.99,
-        "quantity": 1
-      }
-    ],
-    "buyerWallet": "0xd71f8fb9fbbb05be8137e7efd64036d7ac329d6d",
-    "deliveryAddress": "",
-    "totalEth": "0.0505",
-    "status": "PAID_ESCROW",
-    "deliveryStatus": "OUT_FOR_DELIVERY",
-    "deliveryUpdatedAt": "2026-01-30T13:53:17.443Z",
-    "createdAt": "2026-01-30T13:01:09.930Z"
-  },
-  {
-    "orderId": "ORD-PROD-1769781165558",
-    "items": [
-      {
-        "productId": "PRD003",
-        "name": "Smart Phone Case ",
-        "price": 72,
-        "quantity": 1
-      }
-    ],
-    "buyerWallet": "0xd71f8fb9fbbb05be8137e7efd64036d7ac329d6d",
-    "deliveryAddress": "",
-    "totalEth": "0.0360",
-    "status": "RELEASED",
-    "deliveryStatus": "OUT_FOR_DELIVERY",
-    "deliveryUpdatedAt": "2026-01-30T13:53:11.998Z",
-    "createdAt": "2026-01-30T13:52:46.716Z",
-    "appliedPerk": null,
-    "txHash": "0x53423dc2be33791713024699b594f61fe79fa9b688c8a18ea1f915f2f44356f2",
-    "releasedAt": "2026-01-30T13:54:59.391Z"
-  },
-  {
-    "orderId": "ORD-PROD-1769781254953",
-    "items": [
-      {
-        "productId": "PRD003",
-        "name": "Smart Phone Case ",
-        "price": 72,
-        "quantity": 1
-      }
-    ],
-    "buyerWallet": "0xd71f8fb9fbbb05be8137e7efd64036d7ac329d6d",
-    "deliveryAddress": "",
-    "totalEth": "0.0360",
-    "status": "PAID_ESCROW",
-    "deliveryStatus": "PENDING",
-    "deliveryUpdatedAt": "2026-01-30T13:54:16.045Z",
-    "createdAt": "2026-01-30T13:54:16.045Z",
-    "appliedPerk": null
+    "deliveryUpdatedAt": "2026-01-30T13:20:36.162Z",
+    "createdAt": "2026-01-30T13:20:08.248Z",
+    "txHash": "0x08e0847a2ffa8cc29c4d9d81f76b2129a1fb255fd067afef45dd609c90016788",
+    "releasedAt": "2026-01-30T13:20:55.778Z"
   }
 ]
