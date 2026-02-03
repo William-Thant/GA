@@ -1545,5 +1545,30 @@
     "createdAt": "2026-01-30T12:12:07.666Z",
     "txHash": "0x95ab163e68d9680e96be80029d3228775d28e84ad87490131398f077d90c76fc",
     "releasedAt": "2026-01-30T12:16:29.122Z"
+  },
+  {
+    "orderId": "ORD-CART-1769779205424",
+    "items": [
+      {
+        "name": "Smart Phone Case ",
+        "description": "Exclusive Essential Case for iPhone 14 Pro Max - Clear Purple",
+        "price": 72,
+        "stock": 100,
+        "image": "Screenshot 2026-01-16 233922.png",
+        "category": "Accessories",
+        "releaseDate": "2020-12-12",
+        "productId": "PRD003",
+        "quantity": 1
+      }
+    ],
+    "buyerWallet": "0x7a3465141e3df41c56852048fa1e6da988433263",
+    "deliveryAddress": "",
+    "totalEth": "0.0410",
+    "status": "RELEASED",
+    "deliveryStatus": "OUT_FOR_DELIVERY",
+    "deliveryUpdatedAt": "2026-01-30T13:20:36.162Z",
+    "createdAt": "2026-01-30T13:20:08.248Z",
+    "txHash": "0x08e0847a2ffa8cc29c4d9d81f76b2129a1fb255fd067afef45dd609c90016788",
+    "releasedAt": "2026-01-30T13:20:55.778Z"
   }
 ]
